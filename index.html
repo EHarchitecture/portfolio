@@ -155,9 +155,11 @@
       transform: translateX(-50%);
       font-size: .58rem; letter-spacing: .28em; text-transform: uppercase;
       color: var(--grey-mid);
-      opacity: 0; animation: fadeUp 1s 1.5s forwards;
+      opacity: 0; animation: fadeScrollIn 1s 1.5s forwards;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
     }
+    /* Separate fade-only animation so transform: translateX(-50%) is never overridden */
+    @keyframes fadeScrollIn { from { opacity: 0; } to { opacity: 1; } }
     .hero-scroll::after {
       content: ''; display: block; width: 1px; height: 40px;
       background: var(--grey-mid);
@@ -604,15 +606,26 @@
       /* Architecture TOC */
       .arch-toc-item {
         grid-template-columns: 36px 1fr 28px;
-        gap: 16px; padding: 22px 0;
+        grid-template-rows: auto auto;
+        gap: 10px 16px; padding: 20px 0;
       }
-      .arch-toc-elevation { display: none; }
+      .arch-toc-num  { grid-column: 1; grid-row: 1; }
+      .arch-toc-info { grid-column: 2; grid-row: 1; }
+      .arch-toc-arrow { grid-column: 3; grid-row: 1; }
+      .arch-toc-elevation {
+        display: flex;
+        grid-column: 1 / -1; grid-row: 2;
+        height: 50px; margin-top: 4px;
+      }
+      .arch-toc-year { display: none; }
       .arch-toc-name { font-size: 1.1rem; }
 
       /* Fullpage items */
       .fullpage-item { padding: 36px 20px; }
       .fullpage-caption { grid-template-columns: 1fr; gap: 14px; }
       .fullpage-img-wrap img { max-height: 60vh; }
+      /* Canvas height scales with viewport width to eliminate empty space */
+      .fullpage-canvas { height: calc(var(--ch) * 0.69) !important; }
 
       /* About */
       #about-wrap {
@@ -646,12 +659,21 @@
       .section-wrap.fullbleed .section-label,
       .section-wrap.fullbleed .section-title { padding: 0 16px; }
       .fullpage-item { padding: 28px 16px; }
+      /* Smaller canvas on phone portrait */
+      .fullpage-canvas { height: calc(var(--ch) * 0.36) !important; min-height: 140px; }
       nav { padding: 16px 16px; }
       nav.scrolled { padding: 10px 16px; }
       #about-wrap { padding: 56px 16px; }
       footer { padding: 32px 16px; }
       .modal-header { padding: 16px 16px 12px; }
       .modal-intro { padding: 14px; }
+    }
+
+    /* ==============================
+       RESPONSIVE — 380px (small phone)
+    ============================== */
+    @media (max-width: 380px) {
+      .fullpage-canvas { height: calc(var(--ch) * 0.27) !important; min-height: 120px; }
     }
   </style>
 </head>
@@ -1529,7 +1551,9 @@
           /* Canvas layout — absolute positioning */
           const h = item.canvasH || 600;
           const canvasEl = document.createElement('div');
+          canvasEl.className = 'fullpage-canvas';
           canvasEl.style.cssText = `position:relative;width:100%;height:${h}px;overflow:hidden;`;
+          canvasEl.style.setProperty('--ch', h + 'px');
           item.images.forEach(d => {
             const img = document.createElement('img');
             img.src = d.src; img.alt = item.title; img.loading = 'lazy';
@@ -1863,6 +1887,29 @@
         }
       });
     })();
+    /* ── Responsive canvas: scale height proportionally with container width ── */
+    (function() {
+      /* 1300 = reference viewport width at which canvas heights were designed */
+      var REF_W = 1300;
+      if (typeof ResizeObserver === 'undefined') return;
+      var ro = new ResizeObserver(function(entries) {
+        entries.forEach(function(entry) {
+          var el = entry.target;
+          var naturalH = parseFloat(el.dataset.ch || '600');
+          var w = entry.contentRect.width;
+          var scale = Math.min(1, w / REF_W);
+          var newH = Math.max(100, Math.round(naturalH * scale));
+          el.style.setProperty('height', newH + 'px', 'important');
+        });
+      });
+      document.querySelectorAll('.fullpage-canvas').forEach(function(c) {
+        /* read the --ch variable that was set during buildFullpageList */
+        var ch = c.style.getPropertyValue('--ch').replace('px', '').trim() || '600';
+        c.dataset.ch = ch;
+        ro.observe(c);
+      });
+    })();
+
     observeAll();
   </script>
 
