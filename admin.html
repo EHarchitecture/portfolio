@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Emile Henchoz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <!-- ═══════════════════════════════════════════════════════
+       ADMIN COLOUR TOKENS  (all admin-only UI uses these)
+  ═══════════════════════════════════════════════════════ -->
+  <style id="admin-tokens">
+    :root {
+      --A:      #0ea5e9;          /* admin blue */
+      --A-dk:   #0284c7;
+      --A-bg:   rgba(14,165,233,.06);
+      --A-brd:  rgba(14,165,233,.30);
+      --A-text: #0369a1;
+      --A-bar:  rgba(14,165,233,.94);
+    }
+  </style>
+
+  <!-- Site CSS is injected here after folder is opened -->
+  <style id="site-css-slot"></style>
+
+  <!-- ═══════════════════════════════════════════════════════
+       ADMIN-ONLY STYLES  (overlays, controls, bar, etc.)
+       These appear in a distinct sky-blue colour so you can
+       always tell what is admin UI vs public content.
+  ═══════════════════════════════════════════════════════ -->
+  <style id="admin-css">
+
+    /* ─── base reset ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    /* disable custom cursor in admin */
+    body  { cursor: auto !important; }
+    #cursor-dot, #cursor-ring { display: none !important; }
+
+    /* ─── open-folder screen ─── */
+    #screen-open {
+      position: fixed; inset: 0; z-index: 8000;
+      background: #f7f5f2;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 24px;
+      font-family: 'Inter', sans-serif;
+    }
+    #screen-open h1 {
+      font-family: 'Cormorant Garamond', serif; font-size: 2.4rem;
+      font-weight: 300; margin-bottom: 10px;
+    }
+    #screen-open p { font-size: .88rem; color: #4a4540; max-width: 420px; line-height: 1.7; margin-bottom: 28px; }
+    #btn-open-folder {
+      background: var(--A-bar); color: #fff; border: none;
+      padding: 13px 30px; border-radius: 6px; font-family: 'Inter', sans-serif;
+      font-size: .92rem; cursor: pointer; letter-spacing: .04em;
+    }
+    #btn-open-folder:hover { background: var(--A-dk); }
+    #no-api-warn { margin-top: 18px; font-size: .75rem; color: #b0a89e; max-width: 360px; }
+
+    /* ─── admin bar ─── */
+    #admin-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 7000;
+      height: 50px; background: var(--A-bar); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; gap: 12px;
+      font-family: 'Inter', sans-serif;
+    }
+    .ab-left  { display: flex; align-items: center; gap: 14px; }
+    .ab-right { display: flex; align-items: center; gap: 8px; }
+    .ab-logo  { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem;
+                font-weight: 300; color: #fff; letter-spacing: .04em; }
+    .ab-badge { font-size: .58rem; letter-spacing: .22em; text-transform: uppercase;
+                color: rgba(255,255,255,.6); border: 1px solid rgba(255,255,255,.3);
+                border-radius: 20px; padding: 2px 9px; }
+    .ab-folder { font-size: .72rem; color: rgba(255,255,255,.65); max-width: 200px;
+                 overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ab-unsaved { width: 8px; height: 8px; border-radius: 50%; background: #fbbf24;
+                  flex-shrink: 0; display: none; }
+    .ab-unsaved.on { display: inline-block; }
+
+    .ab-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 14px; border-radius: 5px; font-family: 'Inter', sans-serif;
+      font-size: .75rem; font-weight: 400; cursor: pointer; border: none;
+      letter-spacing: .03em; transition: background .15s;
+    }
+    .ab-btn-ghost { background: rgba(255,255,255,.18); color: #fff; }
+    .ab-btn-ghost:hover { background: rgba(255,255,255,.28); }
+    .ab-btn-white { background: #fff; color: var(--A-dk); }
+    .ab-btn-white:hover { background: #e0f2fe; }
+    .ab-btn-discard { background: rgba(255,255,255,.12); color: rgba(255,255,255,.75); }
+    .ab-btn-discard:hover { background: rgba(255,0,0,.2); color: #fff; }
+
+    /* ─── site content wrapper ─── */
+    #site-wrap { margin-top: 50px; }
+
+    /* ═══════════════════════════════════════════
+       ADMIN EDIT ZONES
+       Anything with .a-zone gets a dashed blue
+       outline on hover and shows its .a-ctrl bar.
+    ═══════════════════════════════════════════ */
+    .a-zone {
+      position: relative;
+      outline: 1.5px dashed transparent;
+      outline-offset: 2px;
+      transition: outline-color .18s;
+    }
+    .a-zone:hover { outline-color: var(--A-brd); }
+    .a-zone:focus-within { outline-color: var(--A); }
+
+    /* floating control bar inside each zone */
+    .a-ctrl {
+      position: absolute; top: 4px; right: 4px; z-index: 200;
+      display: flex; gap: 4px; opacity: 0; pointer-events: none;
+      transition: opacity .18s;
+    }
+    .a-zone:hover .a-ctrl,
+    .a-zone:focus-within .a-ctrl { opacity: 1; pointer-events: all; }
+
+    .a-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 4px; border: none; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: .68rem; font-weight: 400;
+      white-space: nowrap; transition: background .15s;
+    }
+    .a-btn-blue  { background: var(--A-bar); color: #fff; }
+    .a-btn-blue:hover  { background: var(--A-dk); }
+    .a-btn-ghost { background: rgba(255,255,255,.88); color: var(--A-text); border: 1px solid var(--A-brd); }
+    .a-btn-ghost:hover { background: #e0f2fe; }
+    .a-btn-red   { background: rgba(220,38,38,.8); color: #fff; }
+    .a-btn-red:hover   { background: #dc2626; }
+
+    /* ADD CATEGORY BUTTON */
+    .a-btn-add-category {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 14px 32px;
+      background: none;
+      border: 2px dashed var(--A-brd);
+      border-radius: 8px;
+      font-size: .88rem; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--A-text-dim);
+      cursor: pointer;
+      transition: background .18s, border-color .18s, color .18s;
+      width: 100%; max-width: 500px; justify-content: center;
+    }
+    .a-btn-add-category:hover { background: var(--A-bg); border-color: var(--A); color: var(--A); }
+
+    /* CV DROP ZONE */
+    .a-cv-drop {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 20px;
+      border: 1.5px dashed var(--A-brd);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--A-text-dim);
+      font-size: .82rem;
+      transition: background .18s, border-color .18s;
+      max-width: 480px;
+    }
+    .a-cv-drop:hover, .a-cv-drop.drag-over { background: var(--A-bg); border-color: var(--A); }
+    .a-cv-drop.has-file { border-color: #16a34a; color: #15803d; }
+    .a-cv-drop svg { flex-shrink: 0; }
+
+    /* ═══════════════════════════════════════════
+       DRAG-DROP IMAGE ZONES
+    ═══════════════════════════════════════════ */
+    .a-img-zone {
+      position: relative;
+    }
+    .a-img-overlay {
+      position: absolute; inset: 0; z-index: 150;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 6px;
+      background: rgba(14,165,233,.08);
+      border: 2px dashed var(--A-brd);
+      opacity: 0; pointer-events: none;
+      transition: opacity .18s;
+    }
+    .a-img-zone:hover .a-img-overlay { opacity: 1; pointer-events: all; }
+    .a-img-overlay.drag-over {
+      opacity: 1 !important; pointer-events: all;
+      background: rgba(14,165,233,.18);
+      border-color: var(--A);
+    }
+    .a-img-overlay-label {
+      font-family: 'Inter', sans-serif; font-size: .72rem;
+      color: var(--A-text); background: rgba(255,255,255,.9);
+      padding: 6px 14px; border-radius: 4px; pointer-events: none;
+      text-align: center; line-height: 1.5;
+    }
+    .a-img-overlay-btns { display: flex; gap: 6px; }
+
+    /* ─── image size slider (shown below each image zone on hover) ─── */
+    .a-img-size {
+      position: absolute; bottom: 8px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.92); border: 1px solid var(--A-brd);
+      border-radius: 20px; padding: 4px 12px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .18s; white-space: nowrap; z-index: 160;
+    }
+    .a-img-zone:hover .a-img-size { opacity: 1; pointer-events: all; }
+    .a-img-size label { font-size: .65rem; color: var(--A-text); font-family: 'Inter', sans-serif; }
+    .a-img-size input[type=range] { width: 80px; accent-color: var(--A); cursor: pointer; }
+    .a-img-size-val { font-size: .65rem; color: var(--A); font-family: 'Inter', sans-serif; min-width: 32px; }
+
+    /* ═══════════════════════════════════════════
+       CAPTION FIELD (below each spread)
+    ═══════════════════════════════════════════ */
+    .a-caption-row {
+      border-top: 1px dashed var(--A-brd);
+      padding: 8px 4px 4px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .a-caption-icon { font-size: .7rem; color: var(--A-brd); flex-shrink: 0; }
+    .a-caption-input {
+      flex: 1; background: transparent; border: none;
+      border-bottom: 1px solid var(--A-brd); font-family: 'Inter', sans-serif;
+      font-size: .75rem; color: var(--A-text); padding: 3px 2px;
+      outline: none; letter-spacing: .04em;
+      transition: border-color .2s;
+    }
+    .a-caption-input::placeholder { color: rgba(14,165,233,.35); font-style: italic; }
+    .a-caption-input:focus { border-bottom-color: var(--A); }
+
+    /* ═══════════════════════════════════════════
+       INLINE TEXT EDITING
+    ═══════════════════════════════════════════ */
+    [contenteditable] { cursor: text; outline: none; }
+    [contenteditable]:hover { background: var(--A-bg); border-radius: 2px; }
+    [contenteditable]:focus {
+      background: var(--A-bg); outline: 1.5px solid var(--A-brd);
+      border-radius: 2px;
+    }
+    [contenteditable]:empty::before {
+      content: attr(data-ph);
+      color: var(--A-brd); font-style: italic; pointer-events: none;
+    }
+
+    /* ═══════════════════════════════════════════
+       ADD / REMOVE ROW BARS (admin-only)
+    ═══════════════════════════════════════════ */
+    .a-add-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 52px; background: linear-gradient(to bottom, transparent, var(--A-bg));
+    }
+    .a-add-bar-sm { padding: 8px 0; }
+    .a-add-bar-label { font-family: 'Inter', sans-serif; font-size: .65rem;
+      letter-spacing: .14em; text-transform: uppercase; color: var(--A-brd); }
+
+    /* ─── spread toolbar ─── */
+    .a-spread-bar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 6px 8px; background: var(--A-bg);
+      border: 1px dashed var(--A-brd); border-top: none;
+      font-family: 'Inter', sans-serif; font-size: .7rem; color: var(--A-text);
+    }
+    .a-spread-bar label { flex-shrink: 0; }
+
+    /* ─── project detail panel (inline expansion) ─── */
+    .a-project-detail {
+      display: none; padding: 24px 52px 28px;
+      background: var(--A-bg); border: 1px dashed var(--A-brd); border-top: none;
+    }
+    .a-project-detail.open { display: block; }
+    .a-meta-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px;
+      margin-bottom: 18px;
+    }
+    .a-meta-field label {
+      display: block; font-size: .6rem; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--A-text); margin-bottom: 3px; font-family: 'Inter', sans-serif;
+    }
+    .a-meta-input {
+      width: 100%; background: rgba(255,255,255,.8); border: 1px solid var(--A-brd);
+      border-radius: 4px; padding: 5px 8px; font-size: .8rem;
+      font-family: 'Inter', sans-serif; outline: none;
+    }
+    .a-meta-input:focus { border-color: var(--A); }
+
+    /* ─── section header badge ─── */
+    .a-section-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Inter', sans-serif; font-size: .6rem; letter-spacing: .22em;
+      text-transform: uppercase; color: var(--A-text);
+      background: var(--A-bg); border: 1px dashed var(--A-brd);
+      padding: 4px 12px; border-radius: 20px; margin-bottom: 12px;
+    }
+
+    /* ─── toast ─── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #0d0d0d; color: #fff; padding: 9px 20px; border-radius: 24px;
+      font-family: 'Inter', sans-serif; font-size: .78rem;
+      opacity: 0; transition: opacity .3s; z-index: 9999; pointer-events: none;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; }
+    #toast.err  { background: #dc2626; }
+
+    /* ─── confirm bar ─── */
+    #confirm-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 6500;
+      background: #0d0d0d; color: #fff;
+      display: none; align-items: center; justify-content: space-between;
+      padding: 14px 28px; gap: 16px;
+      font-family: 'Inter', sans-serif;
+    }
+    #confirm-bar.on { display: flex; }
+    .cb-msg { font-size: .82rem; color: rgba(255,255,255,.7); }
+    .cb-actions { display: flex; gap: 8px; }
+
+    /* fix: arch-toc-item cursor in admin */
+    .arch-toc-item { cursor: pointer !important; }
+
+    /* ═══════════════════════════════════════════
+       CANVAS LIBRE (Matter / Drawings / Models / Video Games)
+       Placement libre à la InDesign : drag pour déplacer,
+       coins pour redimensionner.
+    ═══════════════════════════════════════════ */
+    .a-canvas {
+      position: relative; width: 100%;
+      background: rgba(14,165,233,.025);
+      border: 1.5px dashed var(--A-brd);
+      overflow: visible;       /* images jamais coupées même si > hauteur canvas */
+      user-select: none;
+      cursor: default;
+    }
+    .a-canvas.drag-over {
+      background: rgba(14,165,233,.10);
+      border-color: var(--A);
+    }
+    .a-canvas-drop {
+      position: absolute; bottom: 14px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Inter', sans-serif; font-size: .72rem;
+      color: var(--A-text); background: rgba(255,255,255,.92);
+      border: 1px solid var(--A-brd); border-radius: 20px;
+      padding: 5px 16px; display: flex; align-items: center; gap: 10px;
+      white-space: nowrap; z-index: 5; pointer-events: all;
+    }
+    /* each image on the canvas */
+    .a-ci {
+      position: absolute; cursor: move;
+      box-shadow: 0 0 0 1.5px transparent;
+      transition: box-shadow .12s; z-index: 1;
+    }
+    .a-ci:hover   { box-shadow: 0 0 0 2px var(--A-brd); z-index: 10; }
+    .a-ci.sel     { box-shadow: 0 0 0 2px var(--A);      z-index: 20; }
+    .a-ci img     { display: block; width: 100%; height: auto; pointer-events: none; }
+    /* corner resize handles */
+    .a-rh {
+      position: absolute; width: 11px; height: 11px;
+      background: #fff; border: 2px solid var(--A);
+      border-radius: 2px; z-index: 30;
+      opacity: 0; transition: opacity .12s;
+    }
+    .a-ci:hover .a-rh, .a-ci.sel .a-rh { opacity: 1; }
+    .a-rh.nw { top:-5px;  left:-5px;  cursor:nw-resize; }
+    .a-rh.ne { top:-5px;  right:-5px; cursor:ne-resize; }
+    .a-rh.sw { bottom:-5px; left:-5px;  cursor:sw-resize; }
+    .a-rh.se { bottom:-5px; right:-5px; cursor:se-resize; }
+    /* action buttons on each image */
+    .a-ci-del, .a-ci-repl, .a-ci-crop {
+      position: absolute; top: 4px; z-index: 40;
+      opacity: 0; transition: opacity .12s;
+      padding: 2px 7px; font-size: .65rem;
+    }
+    .a-ci-del  { right: 4px; }
+    .a-ci-repl { right: 38px; }
+    .a-ci-crop { right: 72px; }
+    .a-ci:hover .a-ci-del, .a-ci.sel .a-ci-del,
+    .a-ci:hover .a-ci-repl, .a-ci.sel .a-ci-repl,
+    .a-ci:hover .a-ci-crop, .a-ci.sel .a-ci-crop { opacity: 1; }
+    .a-ci.cropped img { outline: 2px dashed #f59e0b; }
+    /* Crop modal */
+    #crop-modal {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,.88);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+    }
+    #crop-img-wrap {
+      position: relative; flex: 0 0 auto; line-height: 0;
+    }
+    #crop-img-wrap img {
+      display: block; max-width: 80vw; max-height: 62vh;
+      user-select: none; pointer-events: none;
+    }
+    #crop-rect {
+      position: absolute; border: 2px solid #fff;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,.5);
+      box-sizing: border-box; cursor: move;
+    }
+    .crop-h {
+      position: absolute; width: 10px; height: 10px;
+      background: #fff; border: 1.5px solid #333;
+      border-radius: 2px; z-index: 10; cursor: pointer;
+    }
+    .crop-h.n  { top:-5px;left:50%;transform:translateX(-50%);cursor:n-resize; }
+    .crop-h.s  { bottom:-5px;left:50%;transform:translateX(-50%);cursor:s-resize; }
+    .crop-h.w  { left:-5px;top:50%;transform:translateY(-50%);cursor:w-resize; }
+    .crop-h.e  { right:-5px;top:50%;transform:translateY(-50%);cursor:e-resize; }
+    .crop-h.nw { top:-5px;left:-5px;cursor:nw-resize; }
+    .crop-h.ne { top:-5px;right:-5px;cursor:ne-resize; }
+    .crop-h.sw { bottom:-5px;left:-5px;cursor:sw-resize; }
+    .crop-h.se { bottom:-5px;right:-5px;cursor:se-resize; }
+    #crop-btns { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+    #crop-info { font-family:'Inter',sans-serif;font-size:.7rem;color:rgba(255,255,255,.5);text-align:center; }
+    /* canvas height control bar */
+    .a-canvas-ctrl {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 14px; background: var(--A-bg);
+      border: 1px dashed var(--A-brd); border-top: none;
+      font-family: 'Inter', sans-serif; font-size: .65rem; color: var(--A-text);
+    }
+
+    /* ─── editable section titles ─── */
+    h2.section-title[contenteditable] {
+      cursor: text !important;
+      border-bottom: 1.5px dashed transparent;
+      transition: border-color .18s;
+    }
+    h2.section-title[contenteditable]:hover {
+      background: var(--A-bg);
+      border-bottom-color: var(--A-brd);
+      border-radius: 2px;
+    }
+    h2.section-title[contenteditable]:focus {
+      background: var(--A-bg);
+      border-bottom-color: var(--A);
+      outline: none;
+      border-radius: 2px;
+    }
+    h2.section-title[contenteditable]::after {
+      content: ' ✎';
+      font-size: .5em;
+      color: var(--A-brd);
+      vertical-align: super;
+      font-style: normal;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     OPEN FOLDER SCREEN
+═══════════════════════════════════════════════════════════ -->
+<div id="screen-open">
+  <h1>Site Admin</h1>
+  <p>Ouvre le dossier de ton site pour commencer à modifier le contenu. Tu pourras ensuite tout éditer directement sur la page, comme tu la vois en public.</p>
+  <button id="btn-open-folder">📂 &nbsp;Ouvrir le dossier du site</button>
+  <p id="no-api-warn"></p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ADMIN BAR  (fixed top, sky blue)
+═══════════════════════════════════════════════════════════ -->
+<div id="admin-bar" style="display:none;">
+  <div class="ab-left">
+    <span class="ab-logo">Emile Henchoz</span>
+    <span class="ab-badge">Admin</span>
+    <span class="ab-folder" id="ab-folder-name"></span>
+  </div>
+  <div class="ab-right">
+    <span class="ab-unsaved" id="ab-dot" title="Modifications non enregistrées"></span>
+    <button class="ab-btn ab-btn-ghost" id="btn-preview">👁 Aperçu</button>
+    <button class="ab-btn ab-btn-ghost ab-btn-discard" id="btn-discard" style="display:none;">✕ Annuler</button>
+    <button class="ab-btn ab-btn-white" id="btn-save">✓ Enregistrer</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SITE CONTENT  (rendered exactly like the public site)
+═══════════════════════════════════════════════════════════ -->
+<div id="site-wrap" style="display:none;">
+
+  <!-- cursor elements (hidden by admin CSS) -->
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+
+  <!-- NAV — nav titles update live when section titles are edited -->
+  <nav id="nav" class="scrolled" style="position:relative;top:0;">
+    <a href="#" class="nav-logo">Emile Henchoz</a>
+    <ul class="nav-links">
+      <li><a href="#architecture" id="nav-architecture">Architecture</a></li>
+      <li><a href="#matter"       id="nav-matter">Matter</a></li>
+      <li><a href="#drawings"     id="nav-drawings">Visual Creations</a></li>
+      <li><a href="#models"       id="nav-models">Models</a></li>
+      <li><a href="#videogames"   id="nav-videogames">Video Games</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+  </nav>
+
+  <!-- ── ARCHITECTURE ── -->
+  <section id="architecture">
+    <div class="section-wrap">
+      <span class="a-section-badge">✏️ Section éditable</span>
+      <p class="section-label">01</p>
+      <h2 class="section-title" id="st-architecture" contenteditable="true" data-ph="Architecture" data-nav="nav-architecture">Architecture</h2>
+      <div class="arch-toc" id="arch-toc-admin"></div>
+      <div class="a-add-bar">
+        <button class="a-btn a-btn-ghost" id="btn-add-arch">+ Ajouter un projet</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── MATTER ── -->
+  <section id="matter">
+    <div class="section-wrap fullbleed">
+      <span class="a-section-badge" style="margin-left:52px;">✏️ Section éditable</span>
+      <p class="section-label">02</p>
+      <h2 class="section-title" id="st-matter" contenteditable="true" data-ph="Matter" data-nav="nav-matter">Matter<br>Experimentation</h2>
+      <div class="fullpage-list" id="matter-list-admin"></div>
+      <div class="a-add-bar">
+        <button class="a-btn a-btn-ghost" id="btn-add-matter">+ Ajouter un élément</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── DRAWINGS ── -->
+  <section id="drawings">
+    <div class="section-wrap fullbleed">
+      <span class="a-section-badge" style="margin-left:52px;">✏️ Section éditable</span>
+      <p class="section-label">03</p>
+      <h2 class="section-title" id="st-drawings" contenteditable="true" data-ph="Visual Creations" data-nav="nav-drawings">Visual<br>Creations</h2>
+      <div class="fullpage-list" id="drawings-list-admin"></div>
+      <div class="a-add-bar">
+        <button class="a-btn a-btn-ghost" id="btn-add-drawings">+ Ajouter un élément</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── MODELS ── -->
+  <section id="models">
+    <div class="section-wrap fullbleed">
+      <span class="a-section-badge" style="margin-left:52px;">✏️ Section éditable</span>
+      <p class="section-label">04</p>
+      <h2 class="section-title" id="st-models" contenteditable="true" data-ph="Models" data-nav="nav-models">Models</h2>
+      <div class="fullpage-list" id="models-list-admin"></div>
+      <div class="a-add-bar">
+        <button class="a-btn a-btn-ghost" id="btn-add-models">+ Ajouter un élément</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── VIDEO GAMES ── -->
+  <section id="videogames">
+    <div class="section-wrap fullbleed">
+      <span class="a-section-badge" style="margin-left:52px;">✏️ Section éditable</span>
+      <p class="section-label">05</p>
+      <h2 class="section-title" id="st-videogames" contenteditable="true" data-ph="Video Games" data-nav="nav-videogames">Video Games</h2>
+      <div class="fullpage-list" id="videogames-list-admin"></div>
+      <div class="a-add-bar">
+        <button class="a-btn a-btn-ghost" id="btn-add-videogames">+ Ajouter un élément</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ADD NEW CATEGORY ── -->
+  <div id="add-category-bar" style="padding:40px 52px 0;display:flex;justify-content:center;">
+    <button class="a-btn-add-category" id="btn-add-category">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="flex-shrink:0">
+        <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      Ajouter une nouvelle catégorie
+    </button>
+  </div>
+
+  <!-- dynamic custom sections injected here by JS -->
+  <div id="custom-sections-container"></div>
+
+  <!-- ── ABOUT ── -->
+  <section id="about">
+    <div id="about-wrap">
+      <div>
+        <span class="a-section-badge">✏️ Section éditable</span>
+        <p class="section-label">About</p>
+        <div id="about-bio-admin" class="about-bio"></div>
+        <div id="about-contact-admin" class="about-contact"></div>
+      </div>
+      <div></div>
+    </div>
+  </section>
+
+  <!-- FOOTER (read-only) -->
+  <footer>
+    <span class="footer-name">created by Emile Henchoz</span>
+    <ul class="footer-links">
+      <li><a href="#">
+        <svg width="15" height="11" viewBox="0 0 15 11" fill="none"><rect x=".5" y=".5" width="14" height="10" rx=".5" stroke="currentColor"/><path d="M.5 1 7.5 6.5 14.5 1" stroke="currentColor"/></svg>
+        Email
+      </a></li>
+      <li><a href="#">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x=".5" y=".5" width="12" height="12" rx="3" stroke="currentColor"/><circle cx="6.5" cy="6.5" r="2.5" stroke="currentColor"/><circle cx="10" cy="3" r=".9" fill="currentColor"/></svg>
+        Instagram
+      </a></li>
+    </ul>
+    <span class="footer-copy">&copy; 2025</span>
+  </footer>
+</div>
+
+<!-- ─── CONFIRM BAR ─── -->
+<div id="confirm-bar">
+  <span class="cb-msg">Aperçu ouvert — vérifie les changements puis confirme.</span>
+  <div class="cb-actions">
+    <button class="ab-btn ab-btn-discard" id="btn-confirm-discard">✕ Annuler</button>
+    <button class="ab-btn ab-btn-white"   id="btn-confirm-ok">✓ Confirmer &amp; publier</button>
+  </div>
+</div>
+
+<!-- ─── TOAST ─── -->
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ──────────────────────────────────────────────────────────────
+   CONSTANTS
+────────────────────────────────────────────────────────────── */
+const START_MARKER = '/* @@SITE_DATA_START@@ */';
+const END_MARKER   = '/* @@SITE_DATA_END@@ */';
+
+/* ──────────────────────────────────────────────────────────────
+   STATE
+────────────────────────────────────────────────────────────── */
+let dirHandle    = null;
+let siteData     = null;   // live editable copy
+let originalHTML = '';     // last saved index.html content
+let pendingHTML  = '';     // preview HTML waiting to confirm
+let unsaved      = false;
+
+/* ── Canvas drag/resize state ── */
+let _drag = null;  // { type:'move'|'resize', corner, el, canvas, d, cx0,cy0,x0,y0,w0 }
+
+/* ──────────────────────────────────────────────────────────────
+   DOM SHORTCUTS
+────────────────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const screenOpen = $('screen-open');
+const adminBar   = $('admin-bar');
+const siteWrap   = $('site-wrap');
+const abDot      = $('ab-dot');
+const confirmBar = $('confirm-bar');
+
+/* ── Canvas drag/resize — global mouse handlers ── */
+document.addEventListener('mousemove', e => {
+  if (!_drag) return;
+  const cRect = _drag.canvas.getBoundingClientRect();
+  const pW = 100 / cRect.width;
+  const pH = 100 / cRect.height;
+  const dx = (e.clientX - _drag.cx0) * pW;
+  const dy = (e.clientY - _drag.cy0) * pH;
+  if (_drag.type === 'move') {
+    _drag.d.x = Math.max(0, _drag.x0 + dx);
+    _drag.d.y = Math.max(0, _drag.y0 + dy);
+    _drag.el.style.left = _drag.d.x + '%';
+    _drag.el.style.top  = _drag.d.y + '%';
+  } else {
+    const onRight = _drag.corner === 'ne' || _drag.corner === 'se';
+    if (onRight) {
+      _drag.d.w = Math.max(4, _drag.w0 + dx);
+    } else {
+      const newX = _drag.x0 + dx;
+      const newW = Math.max(4, _drag.w0 - dx);
+      _drag.d.x = newX;
+      _drag.d.w = newW;
+      _drag.el.style.left = newX + '%';
+    }
+    _drag.el.style.width = _drag.d.w + '%';
+  }
+  setUnsaved(true);
+});
+document.addEventListener('mouseup', () => { _drag = null; });
+
+/* ──────────────────────────────────────────────────────────────
+   TOAST
+────────────────────────────────────────────────────────────── */
+let toastT;
+function toast(msg, err=false) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'show' + (err?' err':'');
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>t.className='', 3400);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   UNSAVED STATE
+────────────────────────────────────────────────────────────── */
+function setUnsaved(v) {
+  unsaved = v;
+  abDot.classList.toggle('on', v);
+  $('btn-discard').style.display = v ? 'inline-flex' : 'none';
+}
+
+/* ──────────────────────────────────────────────────────────────
+   FOLDER ACCESS
+────────────────────────────────────────────────────────────── */
+$('btn-open-folder').addEventListener('click', async () => {
+  if (!window.showDirectoryPicker) {
+    toast('Ton navigateur ne supporte pas cette API. Utilise Chrome ou Edge.', true);
+    return;
+  }
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    await loadSite();
+    screenOpen.style.display = 'none';
+    adminBar.style.display   = '';
+    siteWrap.style.display   = '';
+    $('ab-folder-name').textContent = dirHandle.name;
+  } catch(e) {
+    if (e.name !== 'AbortError') toast('Erreur: ' + e.message, true);
+  }
+});
+
+/* ──────────────────────────────────────────────────────────────
+   LOAD SITE  (read index.html → inject CSS → parse data → render)
+────────────────────────────────────────────────────────────── */
+async function loadSite() {
+  const fh   = await dirHandle.getFileHandle('index.html');
+  const file = await fh.getFile();
+  originalHTML = await file.text();
+
+  // Inject site CSS into admin page
+  const cssMatch = originalHTML.match(/<style[^>]*>([\s\S]*?)<\/style>/);
+  if (cssMatch) $('site-css-slot').textContent = cssMatch[1];
+
+  // Parse SITE_DATA
+  const si = originalHTML.indexOf(START_MARKER);
+  const ei = originalHTML.indexOf(END_MARKER);
+  if (si === -1 || ei === -1) { toast('Marqueurs SITE_DATA introuvables dans index.html', true); return; }
+  const block = originalHTML.slice(si + START_MARKER.length, ei).trim();
+  const objStart = block.indexOf('{');
+  siteData = eval('(' + block.slice(objStart, block.lastIndexOf('}') + 1) + ')');
+
+  renderAll();
+}
+
+/* ──────────────────────────────────────────────────────────────
+   RENDER ALL SECTIONS
+────────────────────────────────────────────────────────────── */
+function renderAll() {
+  renderArchitecture();
+  renderFullpageSection('matter-list-admin',      siteData.matterItems,            'matter');
+  renderFullpageSection('drawings-list-admin',    siteData.drawingsItems,          'drawings');
+  renderFullpageSection('models-list-admin',      siteData.modelsItems,            'models');
+  siteData.videogamesItems = siteData.videogamesItems || [];
+  renderFullpageSection('videogames-list-admin',  siteData.videogamesItems,        'videogames');
+  siteData.customSections = siteData.customSections || [];
+  renderCustomSections();
+  renderAbout();
+  applySectionTitles();
+  wireNavSync();
+  wireAddCategoryBtn();
+}
+
+function renderCustomSections() {
+  const container = document.getElementById('custom-sections-container');
+  container.innerHTML = '';
+  siteData.customSections.forEach(sec => renderCustomSection(sec, container));
+}
+
+function renderCustomSection(sec, container) {
+  const secEl = document.createElement('section');
+  secEl.id = 'admin-custom-' + sec.id;
+  secEl.dataset.customId = sec.id;
+  secEl.innerHTML = `
+    <div class="section-wrap fullbleed">
+      <span class="a-section-badge" style="margin-left:52px;">✏️ Section personnalisée
+        <button class="a-btn a-btn-red" style="margin-left:12px;padding:2px 8px;font-size:.65rem;" data-delete-custom="${sec.id}">🗑 Supprimer</button>
+      </span>
+      <h2 class="section-title" id="st-custom-${sec.id}" contenteditable="true" data-ph="Titre de la section" data-custom-title="${sec.id}">${escHtml(sec.title||'Nouvelle section')}</h2>
+      <div class="fullpage-list" id="custom-list-${sec.id}"></div>
+      <div class="a-add-bar">
+        <button class="a-btn a-btn-ghost" id="btn-add-custom-${sec.id}">+ Ajouter un élément</button>
+      </div>
+    </div>
+  `;
+  if (container) container.appendChild(secEl);
+
+  // Render items
+  const listEl = document.getElementById('custom-list-' + sec.id);
+  sec.items = sec.items || [];
+  sec.items.forEach((item, i) => listEl.appendChild(buildFullpageItem(item, i, sec.items, 'custom-' + sec.id)));
+
+  // Add item button
+  document.getElementById('btn-add-custom-' + sec.id).onclick = () => {
+    const blank = { id: sec.id + '-' + Date.now(), title: 'Nouvel élément', description: [''], images: [], canvasH: 600 };
+    sec.items.push(blank);
+    listEl.appendChild(buildFullpageItem(blank, sec.items.length - 1, sec.items, 'custom-' + sec.id));
+    setUnsaved(true);
+  };
+
+  // Title sync
+  const titleEl = secEl.querySelector('[data-custom-title]');
+  titleEl.addEventListener('input', () => {
+    sec.title = titleEl.textContent.trim();
+    setUnsaved(true);
+  });
+
+  // Delete section
+  secEl.querySelector('[data-delete-custom]').addEventListener('click', () => {
+    if (!confirm('Supprimer cette section et tout son contenu ?')) return;
+    const idx = siteData.customSections.findIndex(s => s.id === sec.id);
+    if (idx !== -1) siteData.customSections.splice(idx, 1);
+    secEl.remove();
+    setUnsaved(true);
+  });
+}
+
+function wireAddCategoryBtn() {
+  const btn = document.getElementById('btn-add-category');
+  if (!btn) return;
+  btn.onclick = () => {
+    const sec = { id: 'custom-' + Date.now(), title: 'Nouvelle section', items: [] };
+    siteData.customSections.push(sec);
+    renderCustomSection(sec, document.getElementById('custom-sections-container'));
+    setUnsaved(true);
+    document.getElementById('admin-custom-' + sec.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+}
+
+/* Load saved section titles into the DOM (h2s + nav links) */
+function applySectionTitles() {
+  const t = siteData.sectionTitles || {};
+  const map = { architecture: 'Architecture', matter: 'Matter\nExperimentation', drawings: 'Visual\nCreations', models: 'Models', videogames: 'Video Games' };
+  Object.entries(map).forEach(([id, def]) => {
+    const h2  = $('st-' + id);
+    const nav = $('nav-' + id);
+    const txt = t[id] || def;
+    if (h2) h2.innerHTML = txt.replace(/\n/g, '<br>');
+    if (nav) nav.textContent = txt.split('\n').join(' ');
+  });
+}
+
+/* When any section h2 is edited → update the nav link live */
+function wireNavSync() {
+  document.querySelectorAll('h2.section-title[data-nav]').forEach(h2 => {
+    h2.addEventListener('input', () => {
+      const navEl = $(h2.dataset.nav);
+      if (navEl) navEl.textContent = h2.textContent.replace(/\s+/g,' ').trim();
+      setUnsaved(true);
+    });
+  });
+}
+
+/* ──────────────────────────────────────────────────────────────
+   ARCHITECTURE SECTION
+────────────────────────────────────────────────────────────── */
+function renderArchitecture() {
+  const toc = $('arch-toc-admin');
+  toc.innerHTML = '';
+  siteData.architectureProjects.forEach((p, i) => {
+    toc.appendChild(buildArchRow(p, i));
+  });
+
+  $('btn-add-arch').onclick = () => {
+    const blank = {
+      id: 'project-' + Date.now(), num: String(siteData.architectureProjects.length+1).padStart(2,'0'),
+      title: 'Nouveau projet', program: '', location: '', year: '',
+      context: '', professors: '', collaborators: '', elevation: '',
+      description: [''], spreads: []
+    };
+    siteData.architectureProjects.push(blank);
+    const row = buildArchRow(blank, siteData.architectureProjects.length - 1);
+    toc.appendChild(row);
+    // Auto-open detail panel
+    row.querySelector('.a-project-detail').classList.add('open');
+    row.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    setUnsaved(true);
+  };
+}
+
+function buildArchRow(p, idx) {
+  const wrap = document.createElement('div');
+  wrap.dataset.idx = idx;
+
+  // ── TOC row (same markup as public site) ──
+  const row = document.createElement('div');
+  row.className = 'arch-toc-item a-zone';
+
+  const elevHTML = p.elevation
+    ? `<img src="${p.elevation}" alt="Facade — ${esc(p.title)}" />`
+    : `<div class="arch-toc-elevation-ph"></div>`;
+
+  row.innerHTML = `
+    <span class="arch-toc-num" contenteditable="true" data-ph="N°">${esc(p.num||'')}</span>
+    <div class="arch-toc-elevation a-img-zone" data-field="elevation">
+      ${elevHTML}
+      <div class="a-img-overlay">
+        <div class="a-img-overlay-label">Glisse une image ici<br><small>ou clique Parcourir</small></div>
+        <div class="a-img-overlay-btns">
+          <button class="a-btn a-btn-blue browse-elev">📁 Parcourir</button>
+        </div>
+      </div>
+    </div>
+    <div class="arch-toc-info">
+      <div class="arch-toc-name" contenteditable="true" data-ph="Titre du projet">${esc(p.title)}</div>
+      <div class="arch-toc-program" contenteditable="true" data-ph="Programme">${esc(p.program||'')}</div>
+      <div class="arch-toc-year" contenteditable="true" data-ph="Lieu — Année">${esc(p.location||'')} — ${esc(p.year||'')}</div>
+    </div>
+    <span class="arch-toc-arrow" title="Cliquer pour éditer les détails">▾</span>
+    <div class="a-ctrl">
+      <button class="a-btn a-btn-ghost btn-toggle-detail">✏️ Détails</button>
+      <button class="a-btn a-btn-red btn-rm-arch">✕</button>
+    </div>
+  `;
+
+  // ── Detail panel (admin only, hidden by default) ──
+  const detail = document.createElement('div');
+  detail.className = 'a-project-detail';
+  detail.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <span style="font-family:'Inter',sans-serif;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--A-text);">Détails du projet — ${esc(p.title)}</span>
+      <button class="a-btn a-btn-ghost btn-close-detail">▲ Fermer</button>
+    </div>
+    <div class="a-meta-grid">
+      <div class="a-meta-field"><label>Titre</label><input class="a-meta-input f-title" value="${escAttr(p.title||'')}"></div>
+      <div class="a-meta-field"><label>N°</label><input class="a-meta-input f-num" value="${escAttr(p.num||'')}"></div>
+      <div class="a-meta-field"><label>Programme</label><input class="a-meta-input f-program" value="${escAttr(p.program||'')}"></div>
+      <div class="a-meta-field"><label>Lieu</label><input class="a-meta-input f-location" value="${escAttr(p.location||'')}"></div>
+      <div class="a-meta-field"><label>Année</label><input class="a-meta-input f-year" value="${escAttr(p.year||'')}"></div>
+      <div class="a-meta-field"><label>Contexte</label><input class="a-meta-input f-context" value="${escAttr(p.context||'')}"></div>
+      <div class="a-meta-field"><label>Professeurs</label><input class="a-meta-input f-professors" value="${escAttr(p.professors||'')}"></div>
+      <div class="a-meta-field"><label>Collaborateurs</label><input class="a-meta-input f-collaborators" value="${escAttr(p.collaborators||'')}"></div>
+    </div>
+
+    <div style="font-family:'Inter',sans-serif;font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--A-text);margin-bottom:8px;">Description</div>
+    <div class="desc-list" style="margin-bottom:16px;"></div>
+    <button class="a-btn a-btn-ghost btn-add-desc" style="margin-bottom:20px;">+ Ajouter un paragraphe</button>
+
+    <div style="font-family:'Inter',sans-serif;font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--A-text);margin-bottom:8px;">Images (spreads de la galerie modale)</div>
+    <div class="spreads-list" style="margin-bottom:12px;"></div>
+    <div class="a-add-bar a-add-bar-sm">
+      <button class="a-btn a-btn-ghost btn-add-spread">+ Ajouter un spread</button>
+    </div>
+  `;
+
+  // Populate description
+  const descList = detail.querySelector('.desc-list');
+  (p.description||['']).forEach(d => descList.appendChild(makeDescRow(d)));
+  detail.querySelector('.btn-add-desc').onclick = () => {
+    descList.appendChild(makeDescRow(''));
+    setUnsaved(true);
+  };
+
+  // Populate spreads
+  const spreadsList = detail.querySelector('.spreads-list');
+  (p.spreads||[]).forEach(s => spreadsList.appendChild(buildSpreadRow(normSpread(s))));
+  detail.querySelector('.btn-add-spread').onclick = () => {
+    spreadsList.appendChild(buildSpreadRow({ images:[], caption:'' }));
+    setUnsaved(true);
+  };
+
+  // Toggle detail panel
+  const toggleBtn = row.querySelector('.btn-toggle-detail');
+  const closeBtn  = detail.querySelector('.btn-close-detail');
+  const arrowEl   = row.querySelector('.arch-toc-arrow');
+  function openDetail()  { detail.classList.add('open');    arrowEl.textContent='▴'; }
+  function closeDetail() { detail.classList.remove('open'); arrowEl.textContent='▾'; }
+  toggleBtn.onclick = () => detail.classList.contains('open') ? closeDetail() : openDetail();
+  arrowEl.onclick   = () => detail.classList.contains('open') ? closeDetail() : openDetail();
+  closeBtn.onclick  = closeDetail;
+
+  // Remove project
+  row.querySelector('.btn-rm-arch').onclick = e => {
+    e.stopPropagation();
+    if (confirm(`Supprimer "${p.title}" ?`)) { wrap.remove(); setUnsaved(true); }
+  };
+
+  // Elevation drag-drop
+  setupImgZone(row.querySelector('.a-img-zone'), null, newPath => {
+    row.querySelector('.arch-toc-elevation').innerHTML =
+      `<img src="${newPath}" alt="Facade" />` +
+      `<div class="a-img-overlay"><div class="a-img-overlay-label">Glisse une image ici<br><small>ou clique Parcourir</small></div><div class="a-img-overlay-btns"><button class="a-btn a-btn-blue browse-elev">📁 Parcourir</button></div></div>`;
+    setUnsaved(true);
+  }, row.querySelector('.browse-elev'));
+
+  // Live input listeners
+  detail.querySelectorAll('.a-meta-input').forEach(inp => inp.addEventListener('input', () => {
+    // mirror title change into TOC row
+    if (inp.classList.contains('f-title')) {
+      row.querySelector('.arch-toc-name').textContent = inp.value;
+      detail.querySelector('span').textContent = `Détails du projet — ${inp.value}`;
+    }
+    setUnsaved(true);
+  }));
+  row.querySelectorAll('[contenteditable]').forEach(el => el.addEventListener('input', () => setUnsaved(true)));
+
+  wrap.appendChild(row);
+  wrap.appendChild(detail);
+  return wrap;
+}
+
+/* ── Build one spread row (admin) ── */
+function buildSpreadRow(spread) {
+  const row = document.createElement('div');
+  row.style.cssText = 'margin-bottom:8px;';
+
+  // Image zone (shows images side by side like the modal would)
+  const imgArea = document.createElement('div');
+  imgArea.style.cssText = 'display:flex;gap:2px;background:#f0ede8;';
+
+  const images = spread.images || [];
+  images.forEach((src, ii) => {
+    imgArea.appendChild(buildSpreadImg(src, ii, imgArea, spread));
+  });
+
+  // "Add image" button
+  const addImgBtn = document.createElement('button');
+  addImgBtn.className = 'a-btn a-btn-ghost';
+  addImgBtn.style.cssText = 'align-self:center;margin:8px;';
+  addImgBtn.textContent = '+ Image';
+  addImgBtn.onclick = async () => {
+    const path = await browseImage();
+    if (!path) return;
+    spread.images.push(path);
+    imgArea.insertBefore(buildSpreadImg(path, spread.images.length-1, imgArea, spread), addImgBtn);
+    setUnsaved(true);
+  };
+  imgArea.appendChild(addImgBtn);
+
+  // Caption row
+  const capRow = document.createElement('div');
+  capRow.className = 'a-caption-row';
+  capRow.innerHTML = `<span class="a-caption-icon">✎</span>`;
+  const capInp = document.createElement('input');
+  capInp.type = 'text';
+  capInp.className = 'a-caption-input';
+  capInp.placeholder = 'Légende (optionnel) — visible sous les images dans la galerie';
+  capInp.value = spread.caption || '';
+  capInp.addEventListener('input', () => { spread.caption = capInp.value; setUnsaved(true); });
+  capRow.appendChild(capInp);
+
+  // Remove spread button
+  const rmRow = document.createElement('div');
+  rmRow.className = 'a-spread-bar';
+  rmRow.innerHTML = `<span class="a-add-bar-label">Spread</span>`;
+  const rmBtn = document.createElement('button');
+  rmBtn.className = 'a-btn a-btn-red';
+  rmBtn.textContent = '✕ Supprimer ce spread';
+  rmBtn.onclick = () => { row.remove(); setUnsaved(true); };
+  rmRow.appendChild(rmBtn);
+
+  row.appendChild(rmRow);
+  row.appendChild(imgArea);
+  row.appendChild(capRow);
+  return row;
+}
+
+/* ── One image inside a spread ── */
+function buildSpreadImg(src, ii, imgArea, spread) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'flex:1;position:relative;min-height:120px;';
+
+  const img = document.createElement('img');
+  img.src = src;
+  img.style.cssText = 'width:100%;height:auto;display:block;';
+  img.loading = 'lazy';
+  wrap.appendChild(img);
+
+  // Size slider
+  const sizeDiv = document.createElement('div');
+  sizeDiv.className = 'a-img-size';
+  sizeDiv.innerHTML = `<label>Hauteur max</label><input type="range" min="100" max="900" step="10" value="${parseInt(img.style.maxHeight)||400}" /><span class="a-img-size-val">${parseInt(img.style.maxHeight)||400}px</span>`;
+  const slider = sizeDiv.querySelector('input');
+  const val    = sizeDiv.querySelector('.a-img-size-val');
+  slider.addEventListener('input', () => {
+    const px = slider.value + 'px';
+    img.style.maxHeight = px;
+    val.textContent     = px;
+    spread._imgStyle    = `max-height:${px};`;
+    setUnsaved(true);
+  });
+  wrap.appendChild(sizeDiv);
+
+  // Overlay (drag-drop + remove)
+  const overlay = document.createElement('div');
+  overlay.className = 'a-img-overlay';
+  overlay.innerHTML = `<div class="a-img-overlay-label">Glisse une image<br>ou clique Remplacer</div><div class="a-img-overlay-btns"></div>`;
+  const btnsDiv = overlay.querySelector('.a-img-overlay-btns');
+
+  const replBtn = document.createElement('button');
+  replBtn.className = 'a-btn a-btn-blue';
+  replBtn.textContent = '📁 Remplacer';
+  replBtn.onclick = async e => {
+    e.stopPropagation();
+    const path = await browseImage();
+    if (!path) return;
+    spread.images[ii] = path;
+    img.src = path;
+    setUnsaved(true);
+  };
+  btnsDiv.appendChild(replBtn);
+
+  const rmBtn = document.createElement('button');
+  rmBtn.className = 'a-btn a-btn-red';
+  rmBtn.textContent = '✕';
+  rmBtn.onclick = e => {
+    e.stopPropagation();
+    spread.images.splice(ii, 1);
+    wrap.remove();
+    setUnsaved(true);
+  };
+  btnsDiv.appendChild(rmBtn);
+  wrap.appendChild(overlay);
+
+  // Drag-drop on wrap
+  wrap.classList.add('a-img-zone');
+  setupImgZone(wrap, null, newPath => {
+    spread.images[ii] = newPath;
+    img.src = newPath;
+    setUnsaved(true);
+  });
+
+  return wrap;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   FULLPAGE SECTION (Matter / Drawings / Models)
+────────────────────────────────────────────────────────────── */
+function renderFullpageSection(containerId, items, sectionId) {
+  const list = $(containerId);
+  list.innerHTML = '';
+  items.forEach((item, i) => list.appendChild(buildFullpageItem(item, i, items, sectionId)));
+
+  $('btn-add-' + sectionId).onclick = () => {
+    const blank = { id: sectionId+'-'+Date.now(), title:'Nouvel élément', description:[''], images:[], canvasH: 600 };
+    items.push(blank);
+    list.appendChild(buildFullpageItem(blank, items.length-1, items, sectionId));
+    setUnsaved(true);
+  };
+}
+
+function buildFullpageItem(item, idx, items, sectionId) {
+  const el = document.createElement('div');
+  el.className = 'fullpage-item a-zone';
+  el.dataset.idx = idx;
+
+  /* ── Normalise images to canvas format {src,x,y,w} ── */
+  const canvasH = item.canvasH || 600;
+  item.images = (item.images || []).map((img, i, arr) => {
+    if (typeof img === 'string') {
+      const cols = arr.length || 1;
+      // Largeur raisonnée : max 50% pour 1 image (centrée), plus étroit si plusieurs
+      const w = Math.max(10, Math.min(50, Math.floor(90 / cols)));
+      const x = cols === 1 ? 25 : 5 + i * Math.floor(90 / cols);
+      return { src: img, x, y: 5, w };
+    }
+    return img; // already {src,x,y,w}
+  });
+
+  /* ── Canvas ── */
+  const canvas = document.createElement('div');
+  canvas.className = 'a-canvas';
+  canvas.style.height = canvasH + 'px';
+
+  // Drop hint at bottom of canvas
+  const dropHint = document.createElement('div');
+  dropHint.className = 'a-canvas-drop';
+  dropHint.innerHTML = `<span>Glisser une image ici · ou</span>`;
+  const browseBtn = document.createElement('button');
+  browseBtn.className = 'a-btn a-btn-ghost';
+  browseBtn.style.cssText = 'padding:3px 10px;font-size:.68rem;';
+  browseBtn.textContent = '📁 Parcourir';
+  browseBtn.onclick = async e => {
+    e.stopPropagation();
+    const path = await browseImage();
+    if (!path) return;
+    const d = { src: path, x: 10, y: 10, w: 40 };
+    item.images.push(d);
+    canvas.insertBefore(buildCanvasImg(d, canvas, item), dropHint);
+    setUnsaved(true);
+  };
+  dropHint.appendChild(browseBtn);
+  canvas.appendChild(dropHint);
+
+  // Render existing images
+  item.images.forEach(d => canvas.insertBefore(buildCanvasImg(d, canvas, item), dropHint));
+
+  // Canvas drag-drop for new images (drop anywhere)
+  canvas.addEventListener('dragover', e => { e.preventDefault(); canvas.classList.add('drag-over'); });
+  canvas.addEventListener('dragleave', e => { if (!canvas.contains(e.relatedTarget)) canvas.classList.remove('drag-over'); });
+  canvas.addEventListener('drop', async e => {
+    e.preventDefault(); canvas.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) { toast('Seules les images sont acceptées', true); return; }
+    const path = await saveImageFile(file);
+    if (!path) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.max(0, ((e.clientX - rect.left) / rect.width * 100) - 20);
+    const y = Math.max(0, ((e.clientY - rect.top)  / rect.height * 100) - 10);
+    const d = { src: path, x, y, w: 40 };
+    item.images.push(d);
+    canvas.insertBefore(buildCanvasImg(d, canvas, item), dropHint);
+    setUnsaved(true);
+  });
+
+  /* ── Canvas height control ── */
+  const canvasCtrl = document.createElement('div');
+  canvasCtrl.className = 'a-canvas-ctrl';
+  canvasCtrl.innerHTML = `
+    <label>Hauteur du canvas</label>
+    <input type="range" min="150" max="1800" step="20" value="${canvasH}" style="width:110px;accent-color:var(--A);">
+    <span style="min-width:44px;color:var(--A);font-family:'Inter',sans-serif;font-size:.65rem;">${canvasH}px</span>
+    <span style="color:var(--A-brd);margin-left:6px;font-size:.62rem;">↑↓ agrandir / réduire la zone</span>`;
+  const hSl  = canvasCtrl.querySelector('input');
+  const hVal = canvasCtrl.querySelector('span');
+  hSl.addEventListener('input', () => {
+    canvas.style.height = hSl.value + 'px';
+    hVal.textContent    = hSl.value + 'px';
+    item.canvasH        = parseInt(hSl.value);
+    setUnsaved(true);
+  });
+
+  /* ── Caption block ── */
+  const caption = document.createElement('div');
+  caption.className = 'fullpage-caption';
+
+  const titleEl = document.createElement('div');
+  titleEl.className = 'fullpage-caption-title';
+  titleEl.contentEditable = 'true';
+  titleEl.dataset.ph = 'Titre';
+  titleEl.textContent = item.title;
+  titleEl.addEventListener('input', () => setUnsaved(true));
+
+  const descEl = document.createElement('div');
+  descEl.className = 'fullpage-caption-desc';
+  (item.description || ['']).forEach(d => {
+    const p = document.createElement('p');
+    p.contentEditable = 'true'; p.dataset.ph = 'Description...';
+    p.textContent = d; p.addEventListener('input', () => setUnsaved(true));
+    descEl.appendChild(p);
+  });
+
+  const addParaBtn = document.createElement('button');
+  addParaBtn.className = 'a-btn a-btn-ghost'; addParaBtn.style.marginTop = '8px';
+  addParaBtn.textContent = '+ Paragraphe';
+  addParaBtn.onclick = () => {
+    const p = document.createElement('p');
+    p.contentEditable = 'true'; p.dataset.ph = 'Description...';
+    p.addEventListener('input', () => setUnsaved(true));
+    descEl.appendChild(p); setUnsaved(true);
+  };
+  caption.appendChild(titleEl); caption.appendChild(descEl); caption.appendChild(addParaBtn);
+
+  /* ── Remove item control ── */
+  const ctrl = document.createElement('div');
+  ctrl.className = 'a-ctrl';
+  const rmBtn = document.createElement('button');
+  rmBtn.className = 'a-btn a-btn-red';
+  rmBtn.textContent = '✕ Supprimer';
+  rmBtn.onclick = () => { if (confirm(`Supprimer "${item.title}" ?`)) { el.remove(); setUnsaved(true); } };
+  ctrl.appendChild(rmBtn);
+
+  el.appendChild(ctrl);
+  el.appendChild(canvas);
+  el.appendChild(canvasCtrl);
+  el.appendChild(caption);
+  return el;
+}
+
+/* ── One image on the canvas (libre positioning) ── */
+function buildCanvasImg(d, canvas, item) {
+  const wrap = document.createElement('div');
+  wrap.className = 'a-ci';
+  wrap.style.left  = (d.x || 5)  + '%';
+  wrap.style.top   = (d.y || 5)  + '%';
+  wrap.style.width = (d.w || 40) + '%';
+
+  const img = document.createElement('img');
+  img.src = d.src; img.loading = 'lazy';
+  wrap.appendChild(img);
+
+  /* Corner resize handles */
+  ['nw','ne','sw','se'].forEach(corner => {
+    const h = document.createElement('div');
+    h.className = 'a-rh ' + corner;
+    h.addEventListener('mousedown', e => {
+      e.stopPropagation(); e.preventDefault();
+      selectCI(wrap);
+      _drag = { type:'resize', corner, el:wrap, canvas, d, cx0:e.clientX, cy0:e.clientY, x0:d.x, y0:d.y, w0:d.w };
+    });
+    wrap.appendChild(h);
+  });
+
+  /* Delete button */
+  const del = document.createElement('button');
+  del.className = 'a-btn a-btn-red a-ci-del'; del.textContent = '✕';
+  del.addEventListener('mousedown', e => e.stopPropagation());
+  del.onclick = e => {
+    e.stopPropagation();
+    const i = item.images.indexOf(d);
+    if (i !== -1) item.images.splice(i, 1);
+    wrap.remove(); setUnsaved(true);
+  };
+  wrap.appendChild(del);
+
+  /* Replace button */
+  const repl = document.createElement('button');
+  repl.className = 'a-btn a-btn-blue a-ci-repl'; repl.textContent = '📁';
+  repl.title = 'Remplacer l\'image';
+  repl.addEventListener('mousedown', e => e.stopPropagation());
+  repl.onclick = async e => {
+    e.stopPropagation();
+    const path = await browseImage();
+    if (!path) return; d.src = path; img.src = path; setUnsaved(true);
+  };
+  wrap.appendChild(repl);
+
+  /* Crop button */
+  const cropBtn = document.createElement('button');
+  cropBtn.className = 'a-btn a-btn-ghost a-ci-crop';
+  cropBtn.textContent = '✂';
+  cropBtn.title = 'Rogner l\'image (non destructif)';
+  cropBtn.addEventListener('mousedown', e => e.stopPropagation());
+  cropBtn.onclick = async e => {
+    e.stopPropagation();
+    const result = await showCropModal(d);
+    if (!result) return;
+    d.crop = result;
+    // Apply clip-path on admin preview
+    const clipVal = `inset(${r(result.t)}% ${r(result.r)}% ${r(result.b)}% ${r(result.l)}%)`;
+    img.style.clipPath = clipVal;
+    wrap.classList.toggle('cropped', result.t > 0 || result.r > 0 || result.b > 0 || result.l > 0);
+    setUnsaved(true);
+  };
+  // Apply existing crop if present
+  if (d.crop) {
+    const c = d.crop;
+    img.style.clipPath = `inset(${r(c.t)}% ${r(c.r)}% ${r(c.b)}% ${r(c.l)}%)`;
+    wrap.classList.add('cropped');
+  }
+  wrap.appendChild(cropBtn);
+
+  /* Move on mousedown (drag body) */
+  wrap.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('a-rh') || e.target.tagName === 'BUTTON') return;
+    e.preventDefault();
+    selectCI(wrap);
+    _drag = { type:'move', el:wrap, canvas, d, cx0:e.clientX, cy0:e.clientY, x0:d.x, y0:d.y, w0:d.w };
+  });
+
+  return wrap;
+}
+
+function selectCI(wrap) {
+  document.querySelectorAll('.a-ci.sel').forEach(el => el.classList.remove('sel'));
+  wrap.classList.add('sel');
+}
+
+/* ──────────────────────────────────────────────────────────────
+   ABOUT SECTION
+────────────────────────────────────────────────────────────── */
+function renderAbout() {
+  const a       = siteData.about;
+  const bioEl   = $('about-bio-admin');
+  const contEl  = $('about-contact-admin');
+
+  bioEl.innerHTML = '';
+  (a.bio||['']).forEach(para => {
+    const p = document.createElement('p');
+    p.contentEditable = 'true';
+    p.dataset.ph = 'Biographie...';
+    p.textContent = para;
+    p.addEventListener('input', () => setUnsaved(true));
+    bioEl.appendChild(p);
+  });
+
+  // Add paragraph button
+  const addBtn = document.createElement('button');
+  addBtn.className = 'a-btn a-btn-ghost';
+  addBtn.style.marginTop = '10px';
+  addBtn.textContent = '+ Ajouter un paragraphe';
+  addBtn.onclick = () => {
+    const p = document.createElement('p');
+    p.contentEditable = 'true';
+    p.dataset.ph = 'Biographie...';
+    p.addEventListener('input', () => setUnsaved(true));
+    bioEl.insertBefore(p, addBtn);
+    setUnsaved(true);
+  };
+  bioEl.appendChild(addBtn);
+
+  // Contact + CV
+  contEl.innerHTML = `
+    <p class="about-contact-label">Diplôme / Hero subtitle</p>
+    <div class="a-meta-grid" style="max-width:480px;margin-bottom:20px;">
+      <div class="a-meta-field" style="grid-column:1/-1;">
+        <label>Titre sous le nom (page d'accueil)</label>
+        <input class="a-meta-input" id="about-hero-title-inp" value="${escAttr(a.heroTitle||'')}">
+      </div>
+    </div>
+    <p class="about-contact-label">Contact</p>
+    <div class="a-meta-grid" style="max-width:480px;margin-bottom:20px;">
+      <div class="a-meta-field">
+        <label>Email</label>
+        <input class="a-meta-input" id="about-email-inp" type="email" value="${escAttr(a.email||'')}">
+      </div>
+      <div class="a-meta-field">
+        <label>Instagram (sans @)</label>
+        <input class="a-meta-input" id="about-ig-inp" value="${escAttr(a.instagram||'')}">
+      </div>
+    </div>
+    <p class="about-contact-label">CV (PDF)</p>
+    <div id="cv-drop-zone" class="a-cv-drop ${a.cvFile ? 'has-file' : ''}">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <line x1="12" y1="3" x2="12" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <polyline points="7,12 12,17 17,12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="4" y1="21" x2="20" y2="21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div id="cv-drop-label">${a.cvFile ? '📄 ' + escHtml(a.cvFile) + ' — glissez un nouveau fichier pour remplacer' : 'Glissez votre CV (PDF) ici'}</div>
+    </div>
+  `;
+  ['about-hero-title-inp','about-email-inp','about-ig-inp'].forEach(id => {
+    contEl.querySelector('#'+id)?.addEventListener('input', () => setUnsaved(true));
+  });
+
+  // CV drag-drop
+  const dropZone = contEl.querySelector('#cv-drop-zone');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', async e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (!file || file.type !== 'application/pdf') {
+      dropZone.querySelector('#cv-drop-label').textContent = '⚠️ Seuls les fichiers PDF sont acceptés.';
+      return;
+    }
+    try {
+      const fh = await dirHandle.getFileHandle('CV_Emile_Henchoz.pdf', { create: true });
+      const writable = await fh.createWritable();
+      await writable.write(file);
+      await writable.close();
+      siteData.about.cvFile = 'CV_Emile_Henchoz.pdf';
+      dropZone.classList.add('has-file');
+      dropZone.querySelector('#cv-drop-label').textContent = '📄 CV_Emile_Henchoz.pdf — glissez un nouveau fichier pour remplacer';
+      setUnsaved(true);
+    } catch(err) {
+      dropZone.querySelector('#cv-drop-label').textContent = '❌ Erreur: ' + err.message;
+    }
+  });
+  dropZone.addEventListener('click', async () => {
+    const [fh] = await window.showOpenFilePicker({ types:[{ description:'PDF', accept:{'application/pdf':['.pdf']} }] });
+    if (!fh) return;
+    const file = await fh.getFile();
+    const dest = await dirHandle.getFileHandle('CV_Emile_Henchoz.pdf', { create: true });
+    const writable = await dest.createWritable();
+    await writable.write(await file.arrayBuffer());
+    await writable.close();
+    siteData.about.cvFile = 'CV_Emile_Henchoz.pdf';
+    dropZone.classList.add('has-file');
+    dropZone.querySelector('#cv-drop-label').textContent = '📄 CV_Emile_Henchoz.pdf — glissez un nouveau fichier pour remplacer';
+    setUnsaved(true);
+  });
+}
+
+/* ──────────────────────────────────────────────────────────────
+   DESCRIPTION ROW BUILDER
+────────────────────────────────────────────────────────────── */
+function makeDescRow(text) {
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
+  const ta = document.createElement('textarea');
+  ta.style.cssText = 'flex:1;min-height:70px;padding:6px 8px;border:1px solid var(--A-brd);border-radius:4px;font-family:"Cormorant Garamond",serif;font-size:.9rem;resize:vertical;';
+  ta.value = text;
+  ta.placeholder = 'Paragraphe...';
+  ta.addEventListener('input', () => setUnsaved(true));
+  const rmBtn = document.createElement('button');
+  rmBtn.className = 'a-btn a-btn-red';
+  rmBtn.style.alignSelf = 'flex-start';
+  rmBtn.textContent = '✕';
+  rmBtn.onclick = () => { row.remove(); setUnsaved(true); };
+  row.appendChild(ta);
+  row.appendChild(rmBtn);
+  return row;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   DRAG-DROP + BROWSE SETUP
+────────────────────────────────────────────────────────────── */
+function setupImgZone(zone, imgEl, onNewPath, browseBtn) {
+  const overlay = zone.querySelector('.a-img-overlay');
+  if (!overlay) return;
+
+  zone.addEventListener('dragover', e => { e.preventDefault(); overlay.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => overlay.classList.remove('drag-over'));
+  zone.addEventListener('drop', async e => {
+    e.preventDefault();
+    overlay.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) { toast('Seules les images sont acceptées', true); return; }
+    const path = await saveImageFile(file);
+    if (path) onNewPath(path);
+  });
+
+  if (browseBtn) {
+    browseBtn.onclick = async e => {
+      e.stopPropagation();
+      const path = await browseImage();
+      if (path) onNewPath(path);
+    };
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   IMAGE FILE HANDLING
+────────────────────────────────────────────────────────────── */
+async function saveImageFile(file) {
+  if (!dirHandle) { toast('Ouvre un dossier d\'abord', true); return null; }
+  try {
+    // Try to save into images/ subfolder
+    let imgDir;
+    try { imgDir = await dirHandle.getDirectoryHandle('images', { create: true }); }
+    catch(_) { imgDir = dirHandle; }
+
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const fh = await imgDir.getFileHandle(safeName, { create: true });
+    const ws = await fh.createWritable();
+    await ws.write(file);
+    await ws.close();
+    return 'images/' + safeName;
+  } catch(e) {
+    toast('Erreur lors de la sauvegarde: ' + e.message, true);
+    return null;
+  }
+}
+
+async function browseImage() {
+  if (!dirHandle) { toast('Ouvre un dossier d\'abord', true); return null; }
+  try {
+    const [fh] = await window.showOpenFilePicker({
+      types: [{ description: 'Images', accept: { 'image/*': ['.png','.jpg','.jpeg','.webp','.gif','.svg'] } }],
+      multiple: false
+    });
+    const relPath = await resolveRelPath(dirHandle, fh);
+    return relPath || (await fh.getFile()).name;
+  } catch(e) {
+    if (e.name !== 'AbortError') toast('Erreur: ' + e.message, true);
+    return null;
+  }
+}
+
+async function resolveRelPath(dirH, targetFH) {
+  async function walk(dh, prefix) {
+    for await (const [name, handle] of dh.entries()) {
+      if (handle.kind === 'file') {
+        if (await handle.isSameEntry(targetFH)) return prefix + name;
+      } else if (handle.kind === 'directory' && !name.startsWith('.') && name !== 'node_modules') {
+        const found = await walk(handle, prefix + name + '/');
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+  try { return await walk(dirH, ''); } catch(_) { return null; }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   COLLECT DATA FROM DOM  (serialize edits back into siteData)
+────────────────────────────────────────────────────────────── */
+function collectAll() {
+  collectArchitecture();
+  collectFullpageList('matter-list-admin',      siteData.matterItems);
+  collectFullpageList('drawings-list-admin',    siteData.drawingsItems);
+  collectFullpageList('models-list-admin',      siteData.modelsItems);
+  siteData.videogamesItems = siteData.videogamesItems || [];
+  collectFullpageList('videogames-list-admin',  siteData.videogamesItems);
+  /* Custom sections — items already updated live in sec.items references */
+  (siteData.customSections || []).forEach(sec => {
+    const listEl = document.getElementById('custom-list-' + sec.id);
+    if (listEl) collectFullpageList('custom-list-' + sec.id, sec.items);
+    const titleEl = document.querySelector('[data-custom-title="' + sec.id + '"]');
+    if (titleEl) sec.title = titleEl.textContent.trim();
+  });
+  collectSectionTitles();
+  collectAbout();
+}
+
+function collectSectionTitles() {
+  const t = {};
+  document.querySelectorAll('h2.section-title[data-nav]').forEach(h2 => {
+    const id = h2.id.replace('st-', '');
+    t[id] = h2.innerHTML.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g,'').trim();
+  });
+  siteData.sectionTitles = t;
+}
+
+function collectArchitecture() {
+  const newProjects = [];
+  document.querySelectorAll('#arch-toc-admin > [data-idx]').forEach(wrap => {
+    const idx  = parseInt(wrap.dataset.idx);
+    const orig = siteData.architectureProjects[idx] || {};
+    const det  = wrap.querySelector('.a-project-detail');
+    const spreadsEl = det ? det.querySelector('.spreads-list') : null;
+
+    // Collect spreads from DOM
+    const spreads = [];
+    if (spreadsEl) {
+      spreadsEl.querySelectorAll(':scope > div').forEach(srow => {
+        const imgs = [];
+        srow.querySelectorAll('.a-img-zone').forEach(izone => {
+          const imgEl = izone.querySelector('img');
+          if (imgEl && imgEl.src) {
+            const rel = imgEl.src.replace(window.location.origin + '/', '').replace(/^.*\/site-wrap\//, '');
+            // get path from src — if it's a blob URL skip, else use src attr
+            const src = izone.querySelector('img').getAttribute('src') || '';
+            if (src) imgs.push(src);
+          }
+        });
+        const cap = srow.querySelector('.a-caption-input');
+        if (imgs.length > 0 || (cap && cap.value)) {
+          spreads.push({ images: imgs, caption: cap ? cap.value : '' });
+        }
+      });
+    } else {
+      // Use existing data if detail wasn't opened
+      (orig.spreads||[]).forEach(s => spreads.push(normSpread(s)));
+    }
+
+    newProjects.push({
+      id:            orig.id || 'project-'+Date.now(),
+      num:           det ? (det.querySelector('.f-num')?.value.trim()||orig.num||'') : (orig.num||''),
+      title:         det ? (det.querySelector('.f-title')?.value.trim()||orig.title||'') : (orig.title||''),
+      program:       det ? (det.querySelector('.f-program')?.value.trim()||'') : (orig.program||''),
+      location:      det ? (det.querySelector('.f-location')?.value.trim()||'') : (orig.location||''),
+      year:          det ? (det.querySelector('.f-year')?.value.trim()||'') : (orig.year||''),
+      context:       det ? (det.querySelector('.f-context')?.value.trim()||'') : (orig.context||''),
+      professors:    det ? (det.querySelector('.f-professors')?.value.trim()||'') : (orig.professors||''),
+      collaborators: det ? (det.querySelector('.f-collaborators')?.value.trim()||'') : (orig.collaborators||''),
+      elevation:     (() => { const img = wrap.querySelector('.arch-toc-elevation img'); return img ? img.getAttribute('src') : (orig.elevation||''); })(),
+      description:   det ? Array.from(det.querySelectorAll('.desc-list textarea')).map(t=>t.value.trim()).filter(Boolean) : (orig.description||[]),
+      spreads:       spreads.length ? spreads : (orig.spreads||[]).map(normSpread)
+    });
+  });
+  siteData.architectureProjects = newProjects;
+}
+
+function collectFullpageList(containerId, items) {
+  const newItems = [];
+  document.querySelectorAll('#' + containerId + ' .fullpage-item').forEach((el, i) => {
+    const orig = items[parseInt(el.dataset.idx)] || items[i] || {};
+
+    /* Images from canvas — read position from inline style */
+    const canvasEl = el.querySelector('.a-canvas');
+    const canvasH  = canvasEl ? parseInt(canvasEl.style.height) || 600 : (orig.canvasH || 600);
+    const imgs = Array.from(el.querySelectorAll('.a-ci img')).map(img => {
+      const wrap = img.closest('.a-ci');
+      return {
+        src: img.getAttribute('src') || '',
+        x:   parseFloat(wrap.style.left)  || 0,
+        y:   parseFloat(wrap.style.top)   || 0,
+        w:   parseFloat(wrap.style.width) || 40
+      };
+    }).filter(d => d.src);
+
+    const title = el.querySelector('.fullpage-caption-title')?.textContent.trim() || orig.title || '';
+    const desc  = Array.from(el.querySelectorAll('.fullpage-caption-desc p'))
+                       .map(p => p.textContent.trim()).filter(Boolean);
+    newItems.push({
+      id:          orig.id || 'item-' + Date.now(),
+      title,
+      description: desc.length ? desc : (orig.description || ['']),
+      images:      imgs.length ? imgs : (orig.images || []),
+      canvasH
+    });
+  });
+  items.length = 0;
+  newItems.forEach(i => items.push(i));
+}
+
+function collectAbout() {
+  const bio = Array.from(document.querySelectorAll('#about-bio-admin p[contenteditable]'))
+                   .map(p => p.textContent.trim()).filter(Boolean);
+  const email      = $('about-email-inp')?.value.trim()        || siteData.about.email;
+  const ig         = $('about-ig-inp')?.value.trim().replace(/^@/,'') || siteData.about.instagram;
+  const heroTitle  = $('about-hero-title-inp')?.value.trim()   || siteData.about.heroTitle || '';
+  const cvFile     = siteData.about.cvFile || '';
+  siteData.about = { heroTitle, cvFile, bio, email, instagram: ig };
+}
+
+/* ──────────────────────────────────────────────────────────────
+   BUILD MODIFIED HTML
+────────────────────────────────────────────────────────────── */
+function buildModifiedHTML() {
+  collectAll();
+  const newBlock = START_MARKER + '\n    var SITE_DATA = ' +
+    JSON.stringify(siteData, null, 2).split('\n').map((l,i) => i===0?'    '+l:'    '+l).join('\n') +
+    ';\n    ' + END_MARKER;
+  const si = originalHTML.indexOf(START_MARKER);
+  const ei = originalHTML.indexOf(END_MARKER) + END_MARKER.length;
+  return originalHTML.slice(0, si) + newBlock + originalHTML.slice(ei);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   SAVE / PREVIEW / CONFIRM
+────────────────────────────────────────────────────────────── */
+$('btn-save').addEventListener('click', async () => {
+  if (!dirHandle) return;
+  try {
+    const html = buildModifiedHTML();
+    await writeFile('index.html', html);
+    originalHTML = html;
+    setUnsaved(false);
+    toast('✓ index.html enregistré et publié');
+    confirmBar.classList.remove('on');
+  } catch(e) { toast('Erreur: ' + e.message, true); }
+});
+
+$('btn-preview').addEventListener('click', async () => {
+  if (!dirHandle) return;
+  try {
+    pendingHTML = buildModifiedHTML();
+    await writeFile('_preview.html', pendingHTML);
+    toast('Aperçu enregistré — ouvre _preview.html dans ton navigateur');
+    confirmBar.classList.add('on');
+  } catch(e) { toast('Erreur: ' + e.message, true); }
+});
+
+$('btn-discard').addEventListener('click', () => {
+  if (!confirm('Annuler toutes les modifications non enregistrées ?')) return;
+  siteData = null;
+  $('arch-toc-admin').innerHTML        = '';
+  $('matter-list-admin').innerHTML     = '';
+  $('drawings-list-admin').innerHTML   = '';
+  $('models-list-admin').innerHTML     = '';
+  $('videogames-list-admin').innerHTML = '';
+  loadSite().then(() => { setUnsaved(false); toast('Modifications annulées'); });
+});
+
+$('btn-confirm-ok').addEventListener('click', async () => {
+  if (!pendingHTML) return;
+  try {
+    await writeFile('index.html', pendingHTML);
+    try { await dirHandle.removeEntry('_preview.html'); } catch(_){}
+    originalHTML = pendingHTML;
+    pendingHTML  = '';
+    confirmBar.classList.remove('on');
+    setUnsaved(false);
+    toast('✓ Publié — index.html mis à jour');
+  } catch(e) { toast('Erreur: ' + e.message, true); }
+});
+
+$('btn-confirm-discard').addEventListener('click', async () => {
+  pendingHTML = '';
+  try { await dirHandle.removeEntry('_preview.html'); } catch(_){}
+  confirmBar.classList.remove('on');
+  toast('Aperçu supprimé');
+});
+
+async function writeFile(name, content) {
+  const fh = await dirHandle.getFileHandle(name, { create: true });
+  const ws = await fh.createWritable();
+  await ws.write(content);
+  await ws.close();
+}
+
+/* ──────────────────────────────────────────────────────────────
+   HELPERS
+────────────────────────────────────────────────────────────── */
+function normSpread(s) {
+  return Array.isArray(s) ? { images: s, caption: '' } : (s || { images: [], caption: '' });
+}
+function esc(s)     { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escHtml(s) { return esc(s); }
+function escAttr(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+function r(n) { return Math.round(n * 10) / 10; }  // round to 1 decimal
+
+/* ──────────────────────────────────────────────────────────────
+   CROP MODAL
+────────────────────────────────────────────────────────────── */
+function showCropModal(d) {
+  return new Promise(resolve => {
+    const crop = d.crop ? { ...d.crop } : { t:0, r:0, b:0, l:0 };
+
+    const modal = document.createElement('div');
+    modal.id = 'crop-modal';
+
+    const imgWrap = document.createElement('div');
+    imgWrap.id = 'crop-img-wrap';
+    const imgEl = document.createElement('img');
+    imgEl.src = d.src;
+    imgWrap.appendChild(imgEl);
+
+    const rectEl = document.createElement('div');
+    rectEl.id = 'crop-rect';
+    imgWrap.appendChild(rectEl);
+
+    const info = document.createElement('div');
+    info.id = 'crop-info';
+    info.textContent = 'Faites glisser les poignées pour rogner · les modifications sont non-destructives';
+
+    const btns = document.createElement('div');
+    btns.id = 'crop-btns';
+
+    const applyBtn = document.createElement('button');
+    applyBtn.className = 'a-btn';
+    applyBtn.textContent = '✓ Appliquer le recadrage';
+    applyBtn.onclick = () => { modal.remove(); resolve({ t: r(crop.t), r: r(crop.r), b: r(crop.b), l: r(crop.l) }); };
+
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'a-btn a-btn-ghost';
+    resetBtn.textContent = '↺ Réinitialiser';
+    resetBtn.onclick = () => { crop.t = crop.r = crop.b = crop.l = 0; updateRect(); };
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'a-btn a-btn-ghost';
+    cancelBtn.textContent = 'Annuler';
+    cancelBtn.onclick = () => { modal.remove(); resolve(null); };
+
+    btns.append(applyBtn, resetBtn, cancelBtn);
+    modal.append(imgWrap, info, btns);
+    document.body.appendChild(modal);
+
+    // Wait for image to load before positioning
+    function init() {
+      updateRect();
+      addHandles();
+    }
+    if (imgEl.complete) requestAnimationFrame(init);
+    else imgEl.onload = init;
+
+    function updateRect() {
+      const iw = imgEl.offsetWidth, ih = imgEl.offsetHeight;
+      const x = crop.l / 100 * iw;
+      const y = crop.t / 100 * ih;
+      const w = (100 - crop.l - crop.r) / 100 * iw;
+      const h = (100 - crop.t - crop.b) / 100 * ih;
+      rectEl.style.left   = x + 'px';
+      rectEl.style.top    = y + 'px';
+      rectEl.style.width  = Math.max(10, w) + 'px';
+      rectEl.style.height = Math.max(10, h) + 'px';
+    }
+
+    function addHandles() {
+      const iw = imgEl.offsetWidth, ih = imgEl.offsetHeight;
+      let _cd = null;  // active crop drag
+
+      // Move handle (drag center of rect)
+      rectEl.addEventListener('mousedown', e => {
+        if (e.target !== rectEl) return;
+        e.preventDefault();
+        _cd = { type:'move', sx:e.clientX, sy:e.clientY, l0:crop.l, t0:crop.t, r0:crop.r, b0:crop.b };
+      });
+
+      ['nw','n','ne','w','e','sw','s','se'].forEach(dir => {
+        const h = document.createElement('div');
+        h.className = 'crop-h ' + dir;
+        rectEl.appendChild(h);
+        h.addEventListener('mousedown', e => {
+          e.preventDefault(); e.stopPropagation();
+          _cd = { type:'resize', dir, sx:e.clientX, sy:e.clientY, l0:crop.l, t0:crop.t, r0:crop.r, b0:crop.b };
+        });
+      });
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+
+      function onMove(e) {
+        if (!_cd) return;
+        const dx = (e.clientX - _cd.sx) / iw * 100;
+        const dy = (e.clientY - _cd.sy) / ih * 100;
+        if (_cd.type === 'move') {
+          // Clamp so crop area doesn't go out of bounds
+          const newL = Math.max(0, Math.min(100 - (_cd.r0 + _cd.l0 > 99 ? 1 : 100 - _cd.r0 - _cd.l0), _cd.l0 + dx));
+          const newT = Math.max(0, Math.min(100 - (100 - _cd.b0 - _cd.t0), _cd.t0 + dy));
+          crop.l = newL; crop.r = Math.max(0, _cd.r0 - (newL - _cd.l0));
+          crop.t = newT; crop.b = Math.max(0, _cd.b0 - (newT - _cd.t0));
+        } else {
+          const d2 = _cd.dir;
+          if (d2.includes('n')) crop.t = Math.max(0, Math.min(100 - crop.b - 1, _cd.t0 + dy));
+          if (d2.includes('s')) crop.b = Math.max(0, Math.min(100 - crop.t - 1, _cd.b0 - dy));
+          if (d2.includes('w')) crop.l = Math.max(0, Math.min(100 - crop.r - 1, _cd.l0 + dx));
+          if (d2.includes('e')) crop.r = Math.max(0, Math.min(100 - crop.l - 1, _cd.r0 - dx));
+        }
+        updateRect();
+      }
+
+      function onUp() {
+        if (!_cd) return;
+        _cd = null;
+      }
+
+      // Cleanup on modal close
+      const origClose = modal._cleanup;
+      modal._cleanup = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        if (origClose) origClose();
+      };
+    }
+
+    // Backdrop click = cancel
+    modal.addEventListener('click', e => { if (e.target === modal) { if (modal._cleanup) modal._cleanup(); modal.remove(); resolve(null); } });
+  });
+}
+
+/* ──────────────────────────────────────────────────────────────
+   API SUPPORT CHECK
+────────────────────────────────────────────────────────────── */
+if (!window.showDirectoryPicker) {
+  $('btn-open-folder').disabled = true;
+  $('no-api-warn').textContent = 'Ton navigateur ne supporte pas l\'API File System Access. Utilise Chrome ou Edge (desktop).';
+}
+</script>
+</body>
+</html>

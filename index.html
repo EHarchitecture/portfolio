@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emile Henchoz — Architecture</title>
+  <meta name="description" content="Portfolio of Emile Henchoz, Bachelor of Arts – HES-SO Architecture." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Cormorant Garamond: elegant serif for body/descriptions -->
+  <!-- Inter: clean sans-serif for UI labels -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ==============================
+       VARIABLES & RESET
+    ============================== */
+    :root {
+      --black:       #0d0d0d;
+      --white:       #f7f5f2;
+      --burgundy:    #6b1c2f;
+      --grey-light:  #e8e4df;
+      --grey-mid:    #b0a89e;
+      --grey-dark:   #4a4540;
+      --font-round:  'Inter', sans-serif;                   /* fallback */
+      --font-serif:  'Cormorant Garamond', Georgia, serif; /* descriptions */
+      --font-sans:   'Inter', -apple-system, sans-serif;   /* UI */
+      --transition:  0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      --trans-fast:  0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      background: var(--white);
+      color: var(--black);
+      font-family: var(--font-sans);
+      font-weight: 300;
+      line-height: 1.6;
+      cursor: none;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    ::selection { background: var(--burgundy); color: var(--white); }
+
+    /* ==============================
+       CUSTOM CURSOR
+    ============================== */
+    #cursor-dot {
+      position: fixed; top: 0; left: 0;
+      width: 8px; height: 8px;
+      background: var(--burgundy);
+      border-radius: 50%;
+      pointer-events: none; z-index: 10000;
+      transform: translate(-50%, -50%);
+      transition: width .2s, height .2s;
+    }
+    #cursor-ring {
+      position: fixed; top: 0; left: 0;
+      width: 36px; height: 36px;
+      border: 1px solid var(--burgundy);
+      border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: width .35s var(--transition), height .35s var(--transition), opacity .35s;
+      opacity: .55;
+    }
+    body.cursor-hover #cursor-dot  { width: 12px; height: 12px; }
+    body.cursor-hover #cursor-ring { width: 56px; height: 56px; opacity: 1; }
+    body.cursor-active #cursor-dot { width: 5px;  height: 5px; }
+
+    /* ==============================
+       NAVIGATION
+    ============================== */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 1060;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 28px 52px;
+      transition: padding var(--transition), background var(--transition);
+    }
+    nav.scrolled {
+      padding: 16px 52px;
+      background: rgba(247,245,242,.92);
+      backdrop-filter: blur(12px);
+    }
+    body.menu-open nav.scrolled {
+      background: transparent;
+      backdrop-filter: none;
+    }
+    .nav-logo {
+      font-family: var(--font-sans); font-weight: 400;
+      font-size: .72rem; letter-spacing: .18em; text-transform: uppercase;
+    }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a {
+      font-size: .68rem; font-weight: 400; letter-spacing: .15em;
+      text-transform: uppercase; color: var(--grey-dark);
+      position: relative; transition: color var(--trans-fast);
+    }
+    .nav-links a::after {
+      content: ''; position: absolute; bottom: -3px; left: 0;
+      width: 0; height: 1px; background: var(--burgundy);
+      transition: width var(--trans-fast);
+    }
+    .nav-links a:hover { color: var(--black); }
+    .nav-links a:hover::after,
+    .nav-links a.active::after { width: 100%; }
+    .nav-links a.active { color: var(--burgundy); }
+
+    /* ==============================
+       HERO
+    ============================== */
+    #hero {
+      height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .hero-eyebrow {
+      font-family: var(--font-sans); font-size: .63rem;
+      letter-spacing: .32em; text-transform: uppercase; color: var(--burgundy);
+      margin-bottom: 22px;
+      opacity: 0; transform: translateY(10px);
+      animation: fadeUp 1s .3s forwards;
+    }
+    /* ── HERO SPRAY: SVG letter groups animated via filter + opacity ── */
+    .hero-letter {
+      will-change: filter, opacity;
+      transform-origin: center center;
+    }
+
+    /* ── HERO NAME: custom Mino-style SVG lettering ── */
+    .hero-name {
+      display: block;
+      width: clamp(280px, 88vw, 1180px);
+      color: var(--black);
+      opacity: 0; transform: translateY(16px);
+      animation: fadeUp 1s .5s forwards;
+    }
+    .hero-name-svg {
+      width: 100%; height: auto;
+      display: block;
+      overflow: visible;
+    }
+    .hero-title {
+      font-family: var(--font-sans); font-size: clamp(.6rem, 1.1vw, .78rem);
+      font-weight: 300; letter-spacing: .24em; text-transform: uppercase;
+      color: var(--grey-dark); margin-top: 20px;
+      opacity: 0; transform: translateY(10px);
+      animation: fadeUp 1s .7s forwards;
+    }
+    .hero-scroll {
+      position: absolute; bottom: 40px; left: 50%;
+      transform: translateX(-50%);
+      font-size: .58rem; letter-spacing: .28em; text-transform: uppercase;
+      color: var(--grey-mid);
+      opacity: 0; animation: fadeUp 1s 1.5s forwards;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .hero-scroll::after {
+      content: ''; display: block; width: 1px; height: 40px;
+      background: var(--grey-mid);
+      animation: scrollDrop 2s 2s infinite;
+    }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+    @keyframes scrollDrop {
+      0%   { transform: scaleY(0); transform-origin: top; opacity: 1; }
+      50%  { transform: scaleY(1); transform-origin: top; opacity: 1; }
+      100% { transform: scaleY(1); transform-origin: bottom; opacity: 0; }
+    }
+
+    /* ==============================
+       SECTION COMMON
+    ============================== */
+    .section-wrap {
+      padding: 120px 52px;
+      max-width: 1400px; margin: 0 auto;
+    }
+    /* Full-bleed sections (drawings, models) have different padding */
+    .section-wrap.fullbleed { padding: 120px 0; }
+    .section-wrap.fullbleed .section-label,
+    .section-wrap.fullbleed .section-title { padding: 0 52px; }
+
+    .section-label {
+      font-family: var(--font-sans); font-size: .6rem;
+      letter-spacing: .3em; text-transform: uppercase;
+      color: var(--burgundy); margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: clamp(2rem, 3.8vw, 3.2rem);
+      font-weight: 300; letter-spacing: .02em; line-height: 1.1;
+      margin-bottom: 72px;
+    }
+
+    /* ==============================
+       ARCHITECTURE — TABLE OF CONTENTS STYLE
+    ============================== */
+    .arch-toc { width: 100%; }
+
+    .arch-toc-item {
+      display: grid;
+      /* num | elevation | info | arrow */
+      grid-template-columns: 48px 1fr 1.2fr 32px;
+      align-items: center;
+      gap: 40px;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--grey-light);
+      cursor: none;
+      position: relative;
+      transition: background var(--trans-fast);
+    }
+    .arch-toc-item:first-child { border-top: 1px solid var(--grey-light); }
+    .arch-toc-item:hover { background: rgba(107,28,47,.03); }
+
+    .arch-toc-num {
+      font-family: var(--font-sans); font-size: .6rem;
+      letter-spacing: .28em; color: var(--grey-mid);
+      align-self: start; padding-top: 4px;
+      transition: color var(--trans-fast);
+    }
+    .arch-toc-item:hover .arch-toc-num { color: var(--burgundy); }
+
+    /* Elevation placeholder / image */
+    .arch-toc-elevation {
+      height: 80px;
+      display: flex; align-items: flex-end;
+      overflow: hidden;
+    }
+    .arch-toc-elevation img {
+      width: 100%; height: 100%;
+      object-fit: contain; object-position: bottom left;
+      opacity: .18;
+      transition: opacity var(--trans-fast);
+    }
+    .arch-toc-item:hover .arch-toc-elevation img { opacity: .55; }
+    /* Placeholder shown when no elevation image yet */
+    .arch-toc-elevation-ph {
+      width: 100%; height: 60px;
+      border-bottom: 1px solid var(--grey-light);
+      opacity: .4;
+    }
+
+    .arch-toc-info { }
+    .arch-toc-name {
+      font-family: var(--font-serif);
+      font-size: clamp(1.15rem, 1.8vw, 1.5rem);
+      font-weight: 300; line-height: 1.2;
+      transition: color var(--trans-fast);
+    }
+    .arch-toc-item:hover .arch-toc-name { color: var(--burgundy); }
+    .arch-toc-program {
+      font-size: .62rem; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--grey-mid); margin-top: 5px;
+    }
+    .arch-toc-year {
+      font-size: .58rem; letter-spacing: .14em;
+      color: var(--grey-mid); margin-top: 3px;
+    }
+
+    .arch-toc-arrow {
+      font-size: .9rem; color: var(--grey-light);
+      transition: color var(--trans-fast), transform var(--trans-fast);
+      justify-self: end;
+    }
+    .arch-toc-item:hover .arch-toc-arrow {
+      color: var(--burgundy);
+      transform: translateX(4px);
+    }
+
+    /* ==============================
+       FULLPAGE SCROLL — Drawings & Models
+    ============================== */
+    .fullpage-list { width: 100%; }
+
+    .fullpage-item {
+      border-top: 1px solid var(--grey-light);
+      padding: 60px 52px;
+    }
+    .fullpage-item:last-child { border-bottom: 1px solid var(--grey-light); }
+
+    /* Images container: full width, no click required */
+    .fullpage-images {
+      width: 100%;
+      display: flex;
+      gap: 2px;
+      margin-bottom: 28px;
+    }
+    .fullpage-images.stacked { flex-direction: column; }
+    .fullpage-img-wrap {
+      flex: 1;
+      background: #f0ede8;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    /* Matter cutouts: transparent PNGs float on the site background */
+    #matter-list .fullpage-img-wrap {
+      background: transparent;
+    }
+    /* Visual Creations: drawings displayed directly on site background */
+    #drawings-list .fullpage-img-wrap {
+      background: transparent;
+    }
+    /* Models: displayed directly on site background like Matter and Drawings */
+    #models-list .fullpage-img-wrap {
+      background: transparent;
+    }
+    .fullpage-img-wrap img {
+      width: 100%;
+      height: auto;
+      max-height: 85vh;
+      object-fit: contain;
+      display: block;
+    }
+    /* Single wide image */
+    .fullpage-images.single .fullpage-img-wrap { flex: none; width: 100%; }
+
+    .fullpage-caption {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+    .fullpage-caption-title {
+      font-family: var(--font-serif);
+      font-size: clamp(1.1rem, 1.6vw, 1.35rem);
+      font-weight: 300;
+    }
+    .fullpage-caption-desc {
+      font-family: var(--font-serif);
+      font-size: .92rem; font-weight: 300;
+      color: var(--grey-dark); line-height: 1.8;
+    }
+    .fullpage-caption-desc p + p { margin-top: .9em; }
+
+    /* ==============================
+       MATTER EXPERIMENTATION
+    ============================== */
+    /* Uses fullpage-list above */
+
+    /* ==============================
+       VIDEO GAMES — COMING SOON
+    ============================== */
+    .coming-soon {
+      padding: 100px 0; text-align: center;
+      border: 1px solid var(--grey-light);
+    }
+    .coming-soon-text {
+      font-family: var(--font-serif); font-size: 1.5rem;
+      font-weight: 300; font-style: italic; color: var(--grey-mid);
+    }
+    .coming-soon-sub {
+      font-size: .63rem; letter-spacing: .26em; text-transform: uppercase;
+      color: var(--grey-mid); margin-top: 12px;
+    }
+
+    /* ==============================
+       ABOUT
+    ============================== */
+    #about-wrap {
+      padding: 120px 52px;
+      max-width: 1400px; margin: 0 auto;
+      display: grid; grid-template-columns: 1.2fr 1fr; gap: 80px;
+    }
+    .about-bio {
+      font-family: var(--font-serif);
+      font-size: clamp(1.05rem, 1.7vw, 1.28rem);
+      font-weight: 300; line-height: 1.8;
+    }
+    .about-bio p + p { margin-top: 1.3em; }
+    .about-contact { margin-top: 48px; }
+    .about-contact-label {
+      font-size: .58rem; letter-spacing: .3em; text-transform: uppercase;
+      color: var(--grey-mid); margin-bottom: 14px;
+    }
+    .about-contact a {
+      display: flex; align-items: center; gap: 8px;
+      font-size: .82rem; letter-spacing: .07em;
+      color: var(--grey-dark); margin-bottom: 8px;
+      transition: color var(--trans-fast);
+    }
+    .about-contact a:hover { color: var(--burgundy); }
+    .about-contact a svg, .footer-links a svg {
+      flex-shrink: 0; opacity: 0.7;
+    }
+    .about-cv-download {
+      display: inline-flex; align-items: center; gap: 9px;
+      margin-top: 32px;
+      font-size: 1rem; letter-spacing: .09em;
+      color: var(--grey-dark);
+      transition: color var(--trans-fast);
+      text-decoration: none;
+    }
+    .about-cv-download:hover { color: var(--burgundy); }
+    .about-cv-download svg { flex-shrink: 0; }
+
+    /* ==============================
+       PROJECT MODAL
+    ============================== */
+    #modal {
+      position: fixed; inset: 0; z-index: 5000;
+      background: var(--black);
+      display: flex; flex-direction: column;
+      opacity: 0; pointer-events: none;
+      transition: opacity .5s ease;
+    }
+    #modal.open { opacity: 1; pointer-events: all; }
+
+    .modal-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 28px 52px 20px; flex-shrink: 0;
+    }
+    .modal-project-title {
+      font-family: var(--font-serif);
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-weight: 300; color: var(--white); line-height: 1.1;
+    }
+    .modal-project-sub {
+      font-size: .63rem; letter-spacing: .2em; text-transform: uppercase;
+      color: var(--grey-mid); margin-top: 6px;
+    }
+    .modal-close {
+      background: none; border: none; cursor: none;
+      color: var(--grey-mid); font-size: .63rem;
+      letter-spacing: .2em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 0; transition: color var(--trans-fast);
+      flex-shrink: 0; margin-top: 4px;
+    }
+    .modal-close:hover { color: var(--white); }
+    .modal-close-x {
+      width: 26px; height: 26px; position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-close-x::before, .modal-close-x::after {
+      content: ''; position: absolute;
+      width: 18px; height: 1px; background: currentColor;
+    }
+    .modal-close-x::before { transform: rotate(45deg); }
+    .modal-close-x::after  { transform: rotate(-45deg); }
+
+    /* Scrollable area: intro (description) + gallery images */
+    .modal-scroll {
+      flex: 1; overflow-y: auto;
+      scrollbar-width: thin; scrollbar-color: #333 transparent;
+    }
+    .modal-scroll::-webkit-scrollbar { width: 3px; }
+    .modal-scroll::-webkit-scrollbar-thumb { background: #333; }
+
+    /* Intro block: description + meta shown ABOVE images, fades on scroll */
+    .modal-intro {
+      display: grid; grid-template-columns: 200px 1fr; gap: 40px;
+      padding: 8px 52px 48px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      transition: opacity .25s ease;
+    }
+    .modal-intro.faded { opacity: 0; pointer-events: none; }
+
+    .modal-gallery {
+      padding: 0 52px 40px;
+    }
+
+    .modal-spread {
+      display: flex; gap: 2px; margin-bottom: 2px;
+    }
+    .modal-spread.single { display: block; }
+    .modal-spread-img { flex: 1; }
+    .modal-spread-img img { width: 100%; height: auto; display: block; }
+
+    .modal-meta-item { margin-bottom: 16px; }
+    .modal-meta-label {
+      font-size: .52rem; letter-spacing: .3em; text-transform: uppercase;
+      color: var(--grey-mid); margin-bottom: 3px;
+    }
+    .modal-meta-value { font-size: .78rem; color: rgba(247,245,242,.75); line-height: 1.5; }
+    .modal-description {
+      font-family: var(--font-serif);
+      font-size: clamp(.92rem, 1.3vw, 1.05rem);
+      font-weight: 300; line-height: 1.85;
+      color: rgba(247,245,242,.7);
+    }
+    .modal-description p + p { margin-top: 1.1em; }
+
+    /* Spread captions (set via admin, displayed below each image row) */
+    .modal-spread-caption {
+      font-family: var(--font-serif); font-size: .8rem; font-weight: 300;
+      font-style: italic; color: var(--grey-mid); text-align: center;
+      padding: 8px 20px 2px; letter-spacing: .04em;
+    }
+
+    /* ==============================
+       FOOTER
+    ============================== */
+    footer {
+      border-top: 1px solid var(--grey-light);
+      padding: 52px 52px;
+      display: flex; justify-content: space-between; align-items: center;
+      max-width: 1400px; margin: 0 auto;
+    }
+    .footer-name { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 300; color: var(--grey-dark); }
+    .footer-links { display: flex; gap: 28px; list-style: none; }
+    .footer-links a {
+      display: flex; align-items: center; gap: 7px;
+      font-size: .63rem; letter-spacing: .2em; text-transform: uppercase;
+      color: var(--grey-dark); transition: color var(--trans-fast);
+    }
+    .footer-links a:hover { color: var(--burgundy); }
+
+    /* ── Hero bubble canvas ── */
+    #hero-bubble {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      z-index: -1; pointer-events: none;
+    }
+    .footer-copy { font-size: .58rem; color: var(--grey-mid); }
+
+    /* ==============================
+       SCROLL REVEAL
+    ============================== */
+    .reveal {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity .8s ease, transform .8s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ==============================
+       HAMBURGER & MOBILE NAV OVERLAY
+    ============================== */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column; justify-content: center; gap: 5px;
+      width: 40px; height: 40px; padding: 6px;
+      background: none; border: none; cursor: pointer; z-index: 1100;
+      position: relative;
+    }
+    .nav-hamburger span {
+      display: block; width: 22px; height: 1px;
+      background: var(--black);
+      transition: transform .32s ease, opacity .22s ease, width .22s ease;
+      transform-origin: center;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; width: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+    #nav-overlay {
+      position: fixed; inset: 0; z-index: 1050;
+      background: var(--white);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity .38s ease;
+    }
+    #nav-overlay.open { opacity: 1; pointer-events: all; }
+
+    .nav-overlay-links { list-style: none; text-align: center; }
+    .nav-overlay-links li { margin: 16px 0; }
+    .nav-overlay-links a {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 7vw, 2.2rem);
+      font-weight: 300; color: var(--black);
+      letter-spacing: .03em;
+      transition: color .2s;
+    }
+    .nav-overlay-links a:hover,
+    .nav-overlay-links a.active { color: var(--burgundy); }
+    .nav-overlay-footer {
+      position: absolute; bottom: 36px;
+      font-size: .58rem; letter-spacing: .22em; text-transform: uppercase;
+      color: var(--grey-mid);
+    }
+
+    /* ==============================
+       TOUCH DEVICES — no custom cursor
+    ============================== */
+    @media (hover: none) {
+      body { cursor: auto !important; }
+      #cursor-dot, #cursor-ring { display: none !important; }
+      .arch-toc-item, .modal-close { cursor: pointer; }
+    }
+
+    /* ==============================
+       RESPONSIVE — 900px (tablet/phone)
+    ============================== */
+    @media (max-width: 900px) {
+      nav { padding: 18px 20px; }
+      nav.scrolled { padding: 12px 20px; }
+      .nav-links { display: none; }
+      .nav-hamburger { display: flex; }
+
+      /* Hero */
+      .hero-name { width: clamp(260px, 92vw, 680px); }
+      .hero-title { font-size: .65rem; letter-spacing: .18em; margin-top: 14px; }
+      .hero-eyebrow { margin-bottom: 16px; }
+
+      /* Sections */
+      .section-wrap { padding: 72px 20px; }
+      .section-wrap.fullbleed { padding: 72px 0; }
+      .section-wrap.fullbleed .section-label,
+      .section-wrap.fullbleed .section-title { padding: 0 20px; }
+      .section-title { margin-bottom: 44px; }
+
+      /* Architecture TOC */
+      .arch-toc-item {
+        grid-template-columns: 36px 1fr 28px;
+        gap: 16px; padding: 22px 0;
+      }
+      .arch-toc-elevation { display: none; }
+      .arch-toc-name { font-size: 1.1rem; }
+
+      /* Fullpage items */
+      .fullpage-item { padding: 36px 20px; }
+      .fullpage-caption { grid-template-columns: 1fr; gap: 14px; }
+      .fullpage-img-wrap img { max-height: 60vh; }
+
+      /* About */
+      #about-wrap {
+        grid-template-columns: 1fr; gap: 32px;
+        padding: 72px 20px;
+      }
+
+      /* Modal — full screen, scrollable */
+      .modal-header { padding: 18px 20px 14px; }
+      .modal-gallery { padding: 0 0 24px; }
+      .modal-intro { grid-template-columns: 1fr; gap: 20px; padding: 20px 20px 32px; }
+      .modal-close { font-size: .58rem; }
+      .modal-project-title { font-size: clamp(1.4rem, 5vw, 2rem); }
+      .modal-spread { flex-direction: column; gap: 2px; }
+
+      /* Footer */
+      footer {
+        flex-direction: column; gap: 20px;
+        align-items: flex-start; padding: 36px 20px;
+      }
+    }
+
+    /* ==============================
+       RESPONSIVE — 480px (phone portrait)
+    ============================== */
+    @media (max-width: 480px) {
+      .hero-name { width: 94vw; }
+      .hero-title { font-size: .6rem; letter-spacing: .14em; }
+      .section-wrap { padding: 56px 16px; }
+      .section-wrap.fullbleed { padding: 56px 0; }
+      .section-wrap.fullbleed .section-label,
+      .section-wrap.fullbleed .section-title { padding: 0 16px; }
+      .fullpage-item { padding: 28px 16px; }
+      nav { padding: 16px 16px; }
+      nav.scrolled { padding: 10px 16px; }
+      #about-wrap { padding: 56px 16px; }
+      footer { padding: 32px 16px; }
+      .modal-header { padding: 16px 16px 12px; }
+      .modal-intro { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+
+  <!-- ====== NAV ====== -->
+  <nav id="nav">
+    <a href="#hero" class="nav-logo">Emile Henchoz</a>
+    <ul class="nav-links">
+      <li><a href="#architecture" data-section="architecture">Architecture</a></li>
+      <li><a href="#matter"       data-section="matter">Matter</a></li>
+      <li><a href="#drawings"     data-section="drawings">Visual Creations</a></li>
+      <li><a href="#models"       data-section="models">Models</a></li>
+      <li><a href="#videogames"   data-section="videogames">Video Games</a></li>
+      <li><a href="#about"        data-section="about">About</a></li>
+    </ul>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- ====== MOBILE NAV OVERLAY ====== -->
+  <div id="nav-overlay" role="dialog" aria-modal="true" aria-label="Navigation">
+    <ul class="nav-overlay-links">
+      <li><a href="#architecture" data-section="architecture">Architecture</a></li>
+      <li><a href="#matter"       data-section="matter">Matter</a></li>
+      <li><a href="#drawings"     data-section="drawings">Visual Creations</a></li>
+      <li><a href="#models"       data-section="models">Models</a></li>
+      <li><a href="#videogames"   data-section="videogames">Video Games</a></li>
+      <li><a href="#about"        data-section="about">About</a></li>
+    </ul>
+    <span class="nav-overlay-footer">Emile Henchoz &mdash; Portfolio</span>
+  </div>
+
+  <!-- ====== HERO ====== -->
+  <!-- SVG filter for hero spray-paint dispersion animation -->
+  <svg id="hero-spray-defs" aria-hidden="true" focusable="false"
+       style="position:absolute;width:0;height:0;overflow:hidden;">
+    <defs>
+      <filter id="hero-spray" x="-70%" y="-70%" width="240%" height="240%"
+              color-interpolation-filters="sRGB">
+        <feTurbulence id="spray-turb" type="fractalNoise"
+          baseFrequency="0.035 0.055" numOctaves="3" seed="12" result="noise"/>
+        <feDisplacementMap id="spray-disp" in="SourceGraphic" in2="noise"
+          scale="0" xChannelSelector="R" yChannelSelector="G" result="disp"/>
+        <feGaussianBlur id="spray-blur" in="disp" stdDeviation="0"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <section id="hero">
+    <canvas id="hero-bubble" aria-hidden="true"></canvas>
+    <p class="hero-eyebrow">Portfolio</p>
+    <!-- Mino font (AdobeStock_358470177) — paths extracted from EPS vector -->
+    <h1 class="hero-name">
+      <svg class="hero-name-svg" viewBox="-5 -5 1138.53 110"
+           preserveAspectRatio="xMidYMid meet"
+           xmlns="http://www.w3.org/2000/svg" aria-label="Emile Henchoz">
+      <g class="hero-letter" data-i="0" transform="translate(0.00,0)">
+        <path fill="currentColor" fill-rule="evenodd" d="M 0.000 0.000 L 0.000 11.282 L 19.503 11.282 L 67.461 11.282 L 67.461 0.000 L 0.000 0.000 Z
+          M 0.000 27.091 L 0.000 100.000 L 68.482 100.000 L 68.482 88.573 L 19.503 88.573 C 17.305 88.573 15.514 86.781 15.514 84.583 L 15.514 59.047 C 15.514 56.849 17.305 55.057 19.503 55.057 L 62.499 55.057 L 62.499 43.630 L 19.503 43.630 C 17.305 43.630 15.514 41.838 15.514 39.640 L 15.514 27.091 L 0.000 27.091 Z"/>
+      </g>
+      <g class="hero-letter" data-i="1" transform="translate(80.48,0)">
+        <path fill="currentColor" fill-rule="evenodd" d="M 15.642 0.000 L 0.000 0.000 L 50.929 89.202 L 54.510 89.202 L 58.091 89.202 L 93.506 27.172 L 93.506 100.000 L 109.020 100.000 L 109.020 0.000 L 93.506 0.000 L 93.377 0.000 L 57.730 67.333 C 57.069 68.583 55.894 69.348 54.510 69.446 C 53.126 69.348 51.950 68.583 51.289 67.333 L 15.642 0.000 Z
+          M 16.389 100.000 L 0.000 100.000 L 0.000 83.611 L 16.389 83.611 L 16.389 100.000 Z"/>
+      </g>
+      <g class="hero-letter" data-i="2" transform="translate(201.50,0)">
+        <path fill="currentColor" fill-rule="evenodd" d="M 15.514 0.000 L 0.000 0.000 L 0.000 100.000 L 15.514 100.000 L 15.514 0.000 Z"/>
+      </g>
+      <g class="hero-letter" data-i="3" transform="translate(229.01,0)">
+        <path fill="currentColor" fill-rule="evenodd" d="M 0.000 0.000 L 0.000 100.000 L 62.207 100.000 L 62.207 88.573 L 19.503 88.573 C 17.305 88.573 15.514 86.781 15.514 84.583 L 15.514 0.000 L 0.000 0.000 Z"/>
+      </g>
+      <g class="hero-letter" data-i="4" transform="translate(303.22,0)">
+        <path fill="currentColor" fill-rule="evenodd" d="M 0.000 0.000 L 0.000 11.282 L 19.503 11.282 L 67.461 11.282 L 67.461 0.000 L 0.000 0.000 Z
+          M 0.000 27.091 L 0.000 100.000 L 68.482 100.000 L 68.482 88.573 L 19.503 88.573 C 17.305 88.573 15.514 86.781 15.514 84.583 L 15.514 59.047 C 15.514 56.849 17.305 55.057 19.503 55.057 L 62.499 55.057 L 62.499 43.630 L 19.503 43.630 C 17.305 43.630 15.514 41.838 15.514 39.640 L 15.514 27.091 L 0.000 27.091 Z"/>
+      </g>
+      <g class="hero-letter" data-i="5" transform="translate(416.70,0)">
+        <path fill="currentColor" fill-rule="evenodd" d="M 80.693 100.000 L 96.060 100.000 L 96.060 0.000 L 80.693 0.000 L 80.693 39.202 C 80.693 41.400 78.901 43.192 76.703 43.192 L 26.839 43.192 L 19.503 43.192 L -0.000 43.192 L -0.000 100.000 L 15.513 100.000 L 15.513 58.609 C 15.513 56.411 17.305 54.620 19.503 54.620 L 76.703 54.620 C 78.901 54.620 80.693 56.411 80.693 58.609 L 80.693 100.000 Z
+          M 15.513 27.383 L 15.513 0.000 L -0.000 0.000 L -0.000 27.383 L 15.513 27.383 Z"/>
+      </g>
+      <g class="hero-letter" data-i="6" transform="translate(524.76,0)">
+        <path fill="currentColor" fill-rule="evenodd" d="M 0.000 0.000 L 0.000 11.282 L 19.503 11.282 L 67.461 11.282 L 67.461 0.000 L 0.000 0.000 Z
+          M 0.000 27.091 L 0.000 100.000 L 68.482 100.000 L 68.482 88.573 L 19.503 88.573 C 17.305 88.573 15.514 86.781 15.514 84.583 L 15.514 59.047 C 15.514 56.849 17.305 55.057 19.503 55.057 L 62.499 55.057 L 62.499 43.630 L 19.503 43.630 C 17.305 43.630 15.514 41.838 15.514 39.640 L 15.514 27.091 L 0.000 27.091 Z"/>
+      </g>
+      <g class="hero-letter" data-i="7" transform="translate(605.25,0)">
+        <path fill="currentColor" fill-rule="evenodd" d="M 93.658 100.000 L 102.416 100.000 L 102.416 0.000 L 87.083 0.000 L 87.632 64.412 C 87.647 66.079 86.694 67.509 85.151 68.140 C 83.608 68.770 81.927 68.415 80.770 67.214 L 15.992 0.000 L 0.443 0.000 L 93.658 100.000 Z
+          M 15.488 100.000 L 0.000 100.000 L 0.000 84.513 L 15.488 84.513 L 15.488 100.000 Z"/>
+      </g>
+      <g class="hero-letter" data-i="8" transform="translate(719.66,0)">
+        <path fill="currentColor" fill-rule="evenodd" d="M 80.220 21.754 L 88.811 12.992 C 78.877 3.608 66.270 -0.000 52.412 -0.000 C 42.814 -0.000 33.411 1.780 24.872 6.286 C 17.126 10.374 10.982 16.110 6.560 23.671 C 1.914 31.616 0.042 40.444 0.001 49.593 C -0.041 58.798 1.825 67.624 6.375 75.668 C 10.730 83.367 16.811 89.281 24.570 93.529 C 32.962 98.124 42.185 100.000 51.702 100.000 C 60.301 100.000 68.884 98.630 76.745 95.034 C 82.917 92.212 88.104 88.201 92.380 83.073 L 83.142 74.699 C 80.109 78.647 76.436 82.012 71.999 84.449 C 66.115 87.680 59.499 88.896 52.837 88.896 C 46.052 88.896 39.554 87.391 33.667 83.980 C 27.922 80.650 23.508 75.970 20.412 70.096 C 17.148 63.900 15.784 57.113 15.784 50.142 C 15.784 43.094 17.087 36.173 20.323 29.869 C 23.341 23.991 27.665 19.256 33.356 15.895 C 39.268 12.404 45.870 10.962 52.695 10.962 C 58.704 10.962 64.541 12.116 69.997 14.656 C 73.846 16.446 77.283 18.802 80.220 21.754 Z"/>
+      </g>
+      <g class="hero-letter" data-i="9" transform="translate(824.04,0)">
+        <path fill="currentColor" fill-rule="evenodd" d="M 80.693 100.000 L 96.060 100.000 L 96.060 0.000 L 80.693 0.000 L 80.693 39.202 C 80.693 41.400 78.901 43.192 76.703 43.192 L 26.839 43.192 L 19.503 43.192 L -0.000 43.192 L -0.000 100.000 L 15.513 100.000 L 15.513 58.609 C 15.513 56.411 17.305 54.620 19.503 54.620 L 76.703 54.620 C 78.901 54.620 80.693 56.411 80.693 58.609 L 80.693 100.000 Z
+          M 15.513 27.383 L 15.513 0.000 L -0.000 0.000 L -0.000 27.383 L 15.513 27.383 Z"/>
+      </g>
+      <g class="hero-letter" data-i="10" transform="translate(932.10,0)">
+        <path fill="currentColor" fill-rule="evenodd" d="M 51.842 -0.000 C 23.211 -0.000 0.000 22.385 0.000 50.000 C 0.000 77.614 23.211 99.999 51.842 99.999 C 80.474 99.999 103.685 77.614 103.685 50.000 C 103.685 22.385 80.474 -0.000 51.842 -0.000 Z
+          M 51.842 10.962 C 31.849 10.962 15.640 28.440 15.640 50.000 C 15.640 71.560 31.849 89.037 51.842 89.037 C 71.836 89.037 88.045 71.560 88.045 50.000 C 88.045 28.440 71.836 10.962 51.842 10.962 Z"/>
+      </g>
+      <g class="hero-letter" data-i="11" transform="translate(1047.79,0)">
+        <path fill="currentColor" fill-rule="evenodd" d="M -0.000 90.713 L -0.000 100.000 L 80.739 100.000 L 80.739 88.573 L 28.405 88.573 C 26.861 88.573 25.537 87.757 24.842 86.378 C 24.147 84.999 24.280 83.450 25.198 82.209 L 64.935 28.522 L 46.033 28.522 L -0.000 90.713 Z
+          M 77.696 11.282 L 79.280 9.141 L 79.280 0.000 L 0.876 0.000 L 0.876 11.282 L 33.479 11.282 L 50.876 11.282 L 77.696 11.282 Z"/>
+      </g>
+      </svg>
+    </h1>
+    <p class="hero-title">Bachelor of Arts &mdash; HES-SO Architecture</p>
+    <div class="hero-scroll">Scroll</div>
+  </section>
+
+  <!-- ====== ARCHITECTURE ====== -->
+  <section id="architecture">
+    <div class="section-wrap">
+      <p class="section-label reveal">01</p>
+      <h2 class="section-title reveal" id="st-architecture">Architecture</h2>
+      <!-- TOC list injected by JS -->
+      <div class="arch-toc reveal" id="arch-toc"></div>
+    </div>
+  </section>
+
+  <!-- ====== MATTER EXPERIMENTATION ====== -->
+  <section id="matter">
+    <div class="section-wrap fullbleed">
+      <p class="section-label reveal">02</p>
+      <h2 class="section-title reveal" id="st-matter">Matter<br>Experimentation</h2>
+      <div class="fullpage-list" id="matter-list"></div>
+    </div>
+  </section>
+
+  <!-- ====== DRAWINGS ====== -->
+  <section id="drawings">
+    <div class="section-wrap fullbleed">
+      <p class="section-label reveal">03</p>
+      <h2 class="section-title reveal" id="st-drawings">Visual<br>Creations</h2>
+      <div class="fullpage-list" id="drawings-list"></div>
+    </div>
+  </section>
+
+  <!-- ====== MODELS ====== -->
+  <section id="models">
+    <div class="section-wrap fullbleed">
+      <p class="section-label reveal">04</p>
+      <h2 class="section-title reveal" id="st-models">Models</h2>
+      <div class="fullpage-list" id="models-list"></div>
+    </div>
+  </section>
+
+  <!-- ====== VIDEO GAMES ====== -->
+  <section id="videogames">
+    <div class="section-wrap fullbleed">
+      <p class="section-label reveal">05</p>
+      <h2 class="section-title reveal" id="st-videogames">Video Games</h2>
+      <div class="fullpage-list" id="videogames-list"></div>
+      <div class="coming-soon reveal" id="videogames-placeholder">
+        <p class="coming-soon-text">Projects in progress</p>
+        <p class="coming-soon-sub">Coming soon</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== CUSTOM SECTIONS (dynamic) ====== -->
+  <div id="custom-sections-public"></div>
+
+  <!-- ====== ABOUT ====== -->
+  <section id="about">
+    <div id="about-wrap">
+      <div>
+        <p class="section-label reveal">About</p>
+        <div id="about-bio" class="about-bio reveal"></div>
+        <div id="about-contact" class="about-contact reveal"></div>
+      </div>
+      <div></div>
+    </div>
+  </section>
+
+  <!-- ====== FOOTER ====== -->
+  <footer>
+    <span class="footer-name">created by Emile Henchoz</span>
+    <ul class="footer-links">
+      <li><a href="mailto:contact@emilehenchoz-architecture.ch">
+        <svg width="15" height="11" viewBox="0 0 15 11" fill="none" aria-hidden="true"><rect x=".5" y=".5" width="14" height="10" rx=".5" stroke="currentColor"/><path d="M.5 1 7.5 6.5 14.5 1" stroke="currentColor"/></svg>
+        Email
+      </a></li>
+      <li><a href="https://instagram.com/emilehenchoz.architecture" target="_blank" rel="noopener">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><rect x=".5" y=".5" width="12" height="12" rx="3" stroke="currentColor"/><circle cx="6.5" cy="6.5" r="2.5" stroke="currentColor"/><circle cx="10" cy="3" r=".9" fill="currentColor"/></svg>
+        Instagram
+      </a></li>
+    </ul>
+    <span class="footer-copy">&copy; 2025</span>
+  </footer>
+
+  <!-- ====== PROJECT MODAL ====== -->
+  <div id="modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-project-title" id="modal-title">—</h2>
+        <p class="modal-project-sub"  id="modal-sub">—</p>
+      </div>
+      <button class="modal-close" id="modal-close">
+        Close <span class="modal-close-x"></span>
+      </button>
+    </div>
+    <div class="modal-scroll" id="modal-scroll">
+      <div class="modal-intro" id="modal-intro"></div>
+      <div class="modal-gallery" id="modal-gallery"></div>
+    </div>
+  </div>
+
+
+  <script>
+    /* ============================================================
+       ██████  SITE DATA
+       All editable content lives here — the admin interface reads
+       and rewrites this block between the marker comments.
+    ============================================================ */
+
+    /* @@SITE_DATA_START@@ */
+    var SITE_DATA =     {
+      "about": {
+        "heroTitle": "Bachelor of Arts — HES-SO Architecture",
+        "cvFile": "CV_Emile_Henchoz.pdf",
+        "bio": [
+          "These studies have allowed me to acquire a solid theoretical foundation in construction practices, while experimenting with materials firsthand. The design and construction of a structure for the Paléo Festival, brick masonry, the creation of a concrete vase, and a seat assembled without nails or screws have given me a concrete understanding of the building process.",
+          "What drives me in architecture is its power to durably transform the environment and daily lives of many people. I enjoy exploring, reflecting, and designing spaces that are both functional and adapted to their users. I am fascinated by the beauty of a structure — however simple — when it perfectly meets the demands of a project, with the right materials in the right places. A well-considered detail that elegantly resolves a complex problem inspires me just as much."
+        ],
+        "email": "contact@emilehenchoz-architecture.ch",
+        "instagram": "emilehenchoz.architecture"
+      },
+      "architectureProjects": [
+        {
+          "id": "planorama",
+          "num": "01",
+          "title": "Planorama",
+          "program": "Scenographic Installation",
+          "location": "Nyon — Plaine de l'Asse",
+          "year": "2023 – 2024",
+          "context": "Bachelor 2nd year · Summer Academy",
+          "professors": "Laurent Essig, David Loriot, Sara Delmenico",
+          "collaborators": "Nicolas Duparc, Nicolas Grunauer, Marine Kurth, Océane Kundert, Suzie Litaudon, Baptiste Pontet, Ninon Rocacher, Elio Savoldelli, Kayla Telesca, Roxane Vogt",
+          "elevation": "images/facades/elev_01-planorama.webp",
+          "description": [
+            "Seen from the front, the mountain imposes by its mass; seen from the side, the project reveals a surprising transparency. This scenography invites everyone to reflect on how perceptions can be deceptive. What seems insurmountable and opaque can, from another angle, become transparent and accessible.",
+            "Developed around the theme of paradox, the installation features a stage resembling a glistening geode and seven stands for students from various HES schools. Constructed in spruce from surrounding forests, the wooden frames were later reclaimed by an association for reuse at another event."
+          ],
+          "spreads": [
+            {
+              "images": [
+                "images/portfolio-pages/page-06.webp",
+                "images/portfolio-pages/page-07.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/portfolio-pages/page-08.webp",
+                "images/portfolio-pages/page-09.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/architecture/planorama/ambiance-1.webp",
+                "images/architecture/planorama/ambiance-2.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/architecture/planorama/ambiance-3.webp",
+                "images/architecture/planorama/ambiance-4.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/architecture/planorama/ambiance-5.webp"
+              ],
+              "caption": ""
+            }
+          ]
+        },
+        {
+          "id": "fabrique-danse",
+          "num": "02",
+          "title": "La Fabrique de la danse",
+          "program": "Performance Hall & Rehearsal Spaces",
+          "location": "Geneva — Avenue de la Jonction",
+          "year": "2022 – 2023",
+          "context": "Bachelor 1st year",
+          "professors": "Sara Delmenico",
+          "collaborators": "",
+          "elevation": "images/facades/elev_02-fabrique.webp",
+          "description": [
+            "Set within an industrial context in transition along a major cultural and social axis, La Fabrique de la danse benefits from a verdant setting while enjoying proximity to the centre of Geneva, bordered by the Arve just before it meets the Rhône.",
+            "The building articulates two volumes evoking movement — particularly the movement of water. The grand wave houses performances; the smaller one accommodates rehearsals. These two forms create three distinct exterior spaces: a garden facing the training rooms, an outdoor café terrace, and a transitional square at the entrance."
+          ],
+          "spreads": [
+            {
+              "images": [
+                "images/portfolio-pages/page-10.webp",
+                "images/portfolio-pages/page-11.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/portfolio-pages/page-12.webp",
+                "images/portfolio-pages/page-13.webp"
+              ],
+              "caption": ""
+            }
+          ]
+        },
+        {
+          "id": "faille",
+          "num": "03",
+          "title": "La Faille",
+          "program": "Housing, Crafts & Emergency Shelter",
+          "location": "Geneva — PAV District",
+          "year": "2023",
+          "context": "Bachelor 2nd year",
+          "professors": "",
+          "collaborators": "",
+          "elevation": "images/facades/elev_03-faille.webp",
+          "description": [
+            "The project integrates harmoniously into its environment through a sober, uniform facade geometry, while revealing a more articulated and intimate interior. It articulates two distinct atmospheres: a peaceful neighbourhood core punctuated by small planted courtyards, and a lively public space with a sports forecourt, the Drize promenade, and a triangular plaza.",
+            "The ground floor hosts commercial spaces on the street side and shared spaces on the courtyard side, while the rooftops accommodate vegetable gardens and shared terraces. Arcaded facades facing Route des Acacias align with those planned for the other buildings in the PAV district."
+          ],
+          "spreads": [
+            {
+              "images": [
+                "images/portfolio-pages/page-14.webp",
+                "images/portfolio-pages/page-15.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/portfolio-pages/page-16.webp",
+                "images/portfolio-pages/page-17.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/portfolio-pages/page-18.webp",
+                "images/portfolio-pages/page-19.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/models/M_AR401_Maquette 1_20ème.webp"
+              ],
+              "caption": ""
+            }
+          ]
+        },
+        {
+          "id": "288-jour",
+          "num": "04",
+          "title": "288ème jour",
+          "program": "Sports Complex",
+          "location": "Geneva",
+          "year": "2023 – 2024",
+          "context": "Bachelor 2nd year",
+          "professors": "",
+          "collaborators": "",
+          "elevation": "images/facades/elev_04-288.webp",
+          "description": [
+            "Located on an industrial wasteland in transition, the project sits along a future axis — the Voie Verte and the Léman Express. Its hybrid structure — a two-storey concrete base and a timber superstructure — offers a vast, luminous sports hall resting on a recessed base housing service facilities.",
+            "Elevated six metres, visitors enjoy complete openness to the exterior without being visible from the street. Level shifts in the floor divide functions while preserving the immensity of the space. Architecture that is both respectful of the site's industrial history and resolutely contemporary."
+          ],
+          "spreads": [
+            {
+              "images": [
+                "images/portfolio-pages/page-20.webp",
+                "images/portfolio-pages/page-21.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/architecture/288-jour/43 COUPE PERS ITB.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/models/MAQUETTE SITE bien.webp",
+                "images/models/Maquette 1-100.webp"
+              ],
+              "caption": "Site model 1:500 and space model 1:100"
+            },
+            {
+              "images": [
+                "images/architecture/288-jour/unreal-1.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/architecture/288-jour/unreal-2.webp",
+                "images/architecture/288-jour/unreal-3.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/architecture/288-jour/Tryptique constru 288e jour.webp"
+              ],
+              "caption": "Constructive triptych 1:20"
+            }
+          ]
+        },
+        {
+          "id": "aerostrate",
+          "num": "05",
+          "title": "Aérostrate",
+          "program": "Mixed-Use Urban Platform",
+          "location": "Geneva",
+          "year": "2024",
+          "context": "Bachelor 3rd year",
+          "professors": "",
+          "collaborators": "",
+          "elevation": "images/facades/elev_05-aerostrate.webp",
+          "description": [
+            "A vast platform floating above parking P51 houses a genuine neighbourhood mixing residences, restaurants, craft workshops, and offices, organized around three interior courtyards. Through a distribution slab on large timber beams, the elevation detaches entirely from the parking structure, creating an impression of lightness.",
+            "The roof, resting on a triangulated structure, channels rainwater inward toward the courtyards where trees and vegetation bring a landscape dimension to the project. A long metal footbridge rises from the other side of the road, offering direct access to the main courtyard."
+          ],
+          "spreads": [
+            {
+              "images": [
+                "images/portfolio-pages/page-26.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/architecture/aerostrate/plans elev 500 3 copie.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/architecture/aerostrate/plans elev 500 3.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/architecture/aerostrate/plans elev 500 3.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/architecture/aerostrate/Capture d’écran 2026-05-04 à 16.51.00.webp",
+                "images/architecture/aerostrate/02.3 Coupe 1_20.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/models/DSC_4371_B.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/models/image exte 2.webp"
+              ],
+              "caption": ""
+            }
+          ]
+        },
+        {
+          "id": "corderie",
+          "num": "06",
+          "title": "La Corderie",
+          "program": "Social Housing & Commerce",
+          "location": "Geneva — Carouge",
+          "year": "2024",
+          "context": "Bachelor 3rd year",
+          "professors": "Deborah Piccolo",
+          "collaborators": "",
+          "elevation": "images/facades/elev_06-corderie.webp",
+          "description": [
+            "This project rehabilitates the Emmaüs building — formerly a rope factory — and extends it with an offset bar that engages with the urban form of the neighbouring housing ensemble. The plot is ideally situated between old Carouge and a wide wooded belt.",
+            "The reinforced structure, with its large exposed concrete pillars, supports a lightweight corridor serving all upper-floor apartments. A succession of loggias reveal the historic structure. The extension offers a vast communal rooftop terrace with views over Carouge."
+          ],
+          "spreads": [
+            {
+              "images": [
+                "images/portfolio-pages/page-30.webp",
+                "images/portfolio-pages/page-31.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/portfolio-pages/page-32.webp",
+                "images/portfolio-pages/page-33.webp"
+              ],
+              "caption": ""
+            }
+          ]
+        },
+        {
+          "id": "dualis",
+          "num": "07",
+          "title": "Dualis",
+          "program": "Museum, Artists' Residences & Ateliers",
+          "location": "Lugano — Viale Castagnola",
+          "year": "2024 – 2025",
+          "context": "Bachelor 3rd year",
+          "professors": "Cédric Schärer",
+          "collaborators": "",
+          "elevation": "images/facades/elev_07-dualis.webp",
+          "description": [
+            "Located at the corner of a major Lugano axis and the Cassarate river, the project divides the programme into two volumes. A large public volume houses the conference hall and restaurant at ground level, exhibition spaces on the upper floors, and seminar rooms at the summit.",
+            "The smaller volume, dedicated to artists, features shared workshops at ground level facing a vast exterior workspace, and studio apartments with mezzanine bedrooms above. Both volumes face each other, oriented toward the rear garden linked to the river, and are clad in a metallic mesh balancing thermal comfort with homogeneous interior light."
+          ],
+          "spreads": [
+            {
+              "images": [
+                "images/portfolio-pages/page-34.webp",
+                "images/portfolio-pages/page-35.webp"
+              ],
+              "caption": ""
+            }
+          ]
+        },
+        {
+          "id": "meyrin",
+          "num": "08",
+          "title": "Between Sport and Nature",
+          "program": "Housing · Live-work units · Offices · Food & Beverage · Park",
+          "location": "Meyrin, Geneva",
+          "year": "2025",
+          "context": "Master · Group project",
+          "professors": "",
+          "collaborators": "Enzo Spagnol, Maxime Prost",
+          "elevation": "images/Fac_ade_Meyrin.webp",
+          "description": [
+            "Today buried beneath the asphalt of avenue Louis-Rendu, the Nant d'Avril is poised to become the beating heart of Meyrin once more. This re-naturalization project goes far beyond simply reopening the stream; it is a genuine territorial ambition to reconcile the city with its original geography. Strategically positioned at the edge between residential districts and agricultural land, the site still bears the scars of its marshy past. By embracing its floodplain character, the project transforms a technical constraint into a major landscape opportunity — the Nant d'Avril becomes a living seam, a gentle transition marking the end of urbanization and the opening toward the grand landscape.",
+            "Along the stream's banks, a riverfront promenade takes shape: a dynamic, convivial space hosting restaurants, local boutiques and craft workshops that animate the project daily. The buildings, positioned along the drainage channels that carry rainwater toward the Nant, act as structural vertebrae — creating a physical and visual continuity between the Vergers district and the stream. Their stepped, serrated facades are not merely aesthetic: each setback offers residents a dual orientation and an unobstructed panorama over the Nant d'Avril and, in the distance, the silhouette of the Jura. A broad typological diversity of housing — from apartments to live-work units — fosters a rich social mix, each home extended by a generous outdoor threshold."
+          ],
+          "spreads": [
+            {
+              "images": [
+                "images/architecture/meyrin/mep1-1.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/architecture/meyrin/mep500-1-1.webp",
+                "images/architecture/meyrin/mep500-2-1.webp"
+              ],
+              "caption": ""
+            },
+            {
+              "images": [
+                "images/architecture/meyrin/mep4-1.webp"
+              ],
+              "caption": ""
+            }
+          ]
+        }
+      ],
+      "matterItems": [
+        {
+          "id": "vase-beton",
+          "title": "Conceptual Vase — Concrete & Glass",
+          "description": [
+            "The vase's geometry emerges from the void itself, while matter becomes a frame around the conceptual object. The design aims to juxtapose the lightness of the flower or plant — suspended, as if floating, at the center — against the dense mineral mass that holds it.",
+            "Design and production of a concrete vase integrating a glass test tube. The process involved designing the formwork plans, producing the wooden formwork for a smooth finish, and researching a concrete mix adapted to the object's small scale.",
+            "The glass element rests on the concrete fold at its upper end, while the body — cast in place — was left to cure for three weeks before demolding."
+          ],
+          "images": [
+            {
+              "src": "images/matter/vase-cutout.webp",
+              "x": 25,
+              "y": 5,
+              "w": 50
+            }
+          ],
+          "canvasH": 950
+        },
+        {
+          "id": "poutre-sous-tendue",
+          "title": "Pre-stressed Timber Beam",
+          "description": [
+            "Design and construction of a pre-stressed timber beam — a structural exploration with 3x6cm sections. The system uses tension rods and turnbuckles to pre-compress the beam, demonstrating how post-tensioning counteracts deflection under load.",
+            "AR 443 — Atelier des Outils · 2023–2024 · Semester 4 · In collaboration with Emma Palazzoni, Eléanor Jimenez Herrada &amp; Arthur Cateland."
+          ],
+          "images": [
+            {
+              "src": "images/matter/beam-front.webp",
+              "x": 17.2407,
+              "y": 7.16667,
+              "w": 67.1813
+            }
+          ],
+          "canvasH": 730
+        },
+        {
+          "id": "assise-sans-clou",
+          "title": "Seat Without Nails or Screws",
+          "description": [
+            "Design and construction of a seat assembled entirely without mechanical fasteners — no nails, no screws. It relies on \"hand made\" wood joinery. The structure is held together by the slightly elastic rope, the tension of which stiffens the seat in addition to providing comfort to the user.",
+            "An exploration of structural logic through material constraint: each element holds the others in place through compression, tension and precise geometry."
+          ],
+          "images": [
+            {
+              "src": "images/matter/assise.webp",
+              "x": 20.8036,
+              "y": 5.11494,
+              "w": 59.0261
+            }
+          ],
+          "canvasH": 870
+        }
+      ],
+      "drawingsItems": [
+        {
+          "id": "image-complexe",
+          "title": "Image complexe, nature en ville",
+          "description": [
+            "A multi-layered architectural drawing superimposing technical section, perspectival view and frontal axonometric view. Produced in black and white, the image explores the relationship between built infrastructure and uncontrolled nature growing in urban contexts through a dense, graphic language.",
+            "The juxtaposition of a construction section above and a stone-paved urban scene below creates a vertical dialogue between the invisible logics of structure and the lived experience of public space."
+          ],
+          "images": [
+            {
+              "src": "images/drawings/image-complexe-final-1.webp",
+              "x": 24.0499,
+              "y": 0.264617,
+              "w": 50
+            },
+            {
+              "src": "images/Maquette_axo_nature_sauvage_urbain036_1.webp",
+              "x": 23.5471,
+              "y": 66.0595,
+              "w": 52.4307
+            }
+          ],
+          "canvasH": 1610
+        },
+        {
+          "id": "assemblage-bois",
+          "title": "Assemblage bois 1:1",
+          "description": [
+            "Axonometric drawing in graphite and white pencil. Produced during the design of a seat assembled without nails or screws, using only 3×6 cm timber battens. The drawing explores the logic of joinery at full scale — how form, grain and connection merge into a unified tectonic gesture."
+          ],
+          "images": [
+            {
+              "src": "images/drawings/assemblage-bois.webp",
+              "x": 25,
+              "y": 5,
+              "w": 50
+            }
+          ],
+          "canvasH": 1090
+        },
+        {
+          "id": "dessin-lumiere",
+          "title": "Light Study from Architectural Model",
+          "description": [
+            "A drawing in white pencil on black paper, studying the behaviour of light within an interior space reproduced from an architectural paper model. The drawing captures the precise geometry of a window casting light across a bare room — a meditation on threshold, void and luminous presence.",
+            "Produced during the course in Theory and Techniques of Representation, this study explores how manual drawing on dark paper reverses the conventional white-page logic, privileging the revelation of light rather than the delineation of form."
+          ],
+          "images": [
+            {
+              "src": "images/drawings/Dessin lumière d'après maquette papier.jpg",
+              "x": 25,
+              "y": 5,
+              "w": 50
+            }
+          ],
+          "canvasH": 810
+        }
+      ],
+      "modelsItems": [
+        {
+          "id": "maquette-typologique",
+          "title": "Typological Model 1:20",
+          "description": [
+            "Presentation of a typology from the project \"La Faille\". A through-apartment with access from the gallery atrium. The kitchen faces this semi-private exterior space, inviting residents to build social bonds. The urban form proposes an economical system with ten apartments per floor served by only two stairwells.",
+            "Materials: cardboard, wood, paper."
+          ],
+          "images": [
+            {
+              "src": "images/models/M_AR401_Maquette 1_20ème.webp",
+              "x": 25,
+              "y": 5,
+              "w": 50
+            }
+          ],
+          "canvasH": 950
+        },
+        {
+          "id": "maquette-structurelle",
+          "title": "Structural Models 1:200",
+          "description": [
+            "Structural analysis of a kindergarten designed by BXD ARQUITECTURA in El Vendrell, Spain (2021). The structure creates four spaces organized in a spiral around a central distributive space with a zenithal skylight. Structure entirely in glued laminated timber.",
+            "Materials: balsa"
+          ],
+          "images": [
+            {
+              "src": "images/Maquette_BXD_1e_re_anne_e.webp",
+              "x": 28.2185,
+              "y": 20.6276,
+              "w": 41.8211
+            }
+          ],
+          "canvasH": 600
+        },
+        {
+          "id": "maquette-structurelle-carton",
+          "title": "Structural Model 1:200 — Upstairs swimming pool",
+          "description": [
+            "Constructive analysis of a non-realized project. Hypotheses developed from the competition drawings of 'Schwimmbad Lido, Rapperswil-Jona' by Morger Partner Architekten. This project served as a direct inspiration for my Bachelor's project '288ème jour', which incorporates a similar timber-concrete hybrid structure with pools positioned on the upper floor.",
+            "Materials: cardboard."
+          ],
+          "images": [
+            {
+              "src": "images/models/Maquette analyse piscine bien.webp",
+              "x": 16.4346,
+              "y": 5,
+              "w": 66.7747
+            }
+          ],
+          "canvasH": 670
+        },
+        {
+          "id": "epure-constructive",
+          "title": "Constructive Study 1:20",
+          "description": [
+            "Issued from the same analysis project, this study presents the constructive aspect of two facade types and the implementation of structural elements. The project adopts a timber stained in an intense green for both the exterior structure and cladding.",
+            "Materials: cardboard, wood, plexiglass, aluminium, foam."
+          ],
+          "images": [
+            {
+              "src": "images/models/Maquette verte.webp",
+              "x": -14.806,
+              "y": 6.26437,
+              "w": 81.0253
+            },
+            {
+              "src": "images/models/axo struc.webp",
+              "x": 50,
+              "y": 5,
+              "w": 45
+            }
+          ],
+          "canvasH": 870
+        },
+        {
+          "id": "maquette-espace",
+          "title": "Space Model 1:20",
+          "description": [
+            "Design and representation of an exhibition space for prescribed works, within a defined set of constraints: contained in a 5×12×16 m volume, with light blue, travertine, an opening, a staircase to the upper floor, and rococo-style details.",
+            "Materials: paper, wood, wire, foam."
+          ],
+          "images": [
+            {
+              "src": "images/models/vthumbnail_AO 23 groupe 10.webp",
+              "x": 28.6401,
+              "y": 5.1626,
+              "w": 42.7469
+            }
+          ],
+          "canvasH": 1230
+        }
+      ],
+      "videogamesItems": [],
+      "sectionTitles": {
+        "architecture": "Architecture",
+        "matter": "Matter\nExperimentation",
+        "drawings": "Visual\nCreations",
+        "models": "Models",
+        "videogames": "Video Games"
+      },
+      "customSections": []
+    };
+    /* @@SITE_DATA_END@@ */
+
+    /* Convenience aliases */
+    var architectureProjects = SITE_DATA.architectureProjects;
+    var matterItems          = SITE_DATA.matterItems;
+    var drawingsItems        = SITE_DATA.drawingsItems;
+    var modelsItems          = SITE_DATA.modelsItems;
+    var videogamesItems      = SITE_DATA.videogamesItems || [];
+
+    /* ============================================================
+       BUILD — About section (dynamic from SITE_DATA)
+    ============================================================ */
+    function buildAbout() {
+      var a = SITE_DATA.about;
+      // Hero subtitle
+      var heroTitleEl = document.querySelector('.hero-title');
+      if (heroTitleEl && a.heroTitle) heroTitleEl.innerHTML = a.heroTitle.replace(/—/g, '&mdash;');
+      // Bio
+      var bioEl = document.getElementById('about-bio');
+      if (bioEl) bioEl.innerHTML = a.bio.map(function(p){ return '<p>' + p + '</p>'; }).join('');
+      // Contact + CV download
+      var cvSvg = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">' +
+        '<line x1="9" y1="2" x2="9" y2="12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>' +
+        '<polyline points="5,9 9,13 13,9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<line x1="3" y1="16" x2="15" y2="16" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>' +
+        '</svg>';
+      var cvHtml = a.cvFile
+        ? '<a href="' + a.cvFile + '" download class="about-cv-download">' + cvSvg + 'Download CV</a>'
+        : '';
+      var contEl = document.getElementById('about-contact');
+      if (contEl) contEl.innerHTML =
+        '<p class="about-contact-label">Contact</p>' +
+        '<a href="mailto:' + a.email + '">' +
+          '<svg width="15" height="11" viewBox="0 0 15 11" fill="none" aria-hidden="true"><rect x=".5" y=".5" width="14" height="10" rx=".5" stroke="currentColor"/><path d="M.5 1 7.5 6.5 14.5 1" stroke="currentColor"/></svg>' +
+          a.email +
+        '</a>' +
+        '<a href="https://instagram.com/' + a.instagram + '" target="_blank" rel="noopener">' +
+          '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><rect x=".5" y=".5" width="12" height="12" rx="3" stroke="currentColor"/><circle cx="6.5" cy="6.5" r="2.5" stroke="currentColor"/><circle cx="10" cy="3" r=".9" fill="currentColor"/></svg>' +
+          '@' + a.instagram +
+        '</a>' + cvHtml;
+    }
+
+    /* ============================================================
+       BUILD — Architecture TOC
+    ============================================================ */
+    function buildArchTOC() {
+      const toc = document.getElementById('arch-toc');
+      architectureProjects.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'arch-toc-item reveal';
+        row.dataset.id = p.id;
+
+        /* Elevation: image if provided, placeholder rect otherwise */
+        const elevHTML = p.elevation
+          ? `<img src="${p.elevation}" alt="Facade elevation — ${p.title}" />`
+          : `<div class="arch-toc-elevation-ph"></div>`;
+
+        row.innerHTML = `
+          <span class="arch-toc-num">${p.num}</span>
+          <div class="arch-toc-elevation">${elevHTML}</div>
+          <div class="arch-toc-info">
+            <div class="arch-toc-name">${p.title}</div>
+            <div class="arch-toc-program">${p.program}</div>
+            <div class="arch-toc-year">${p.location} &mdash; ${p.year}</div>
+          </div>
+          <span class="arch-toc-arrow">&#8594;</span>
+        `;
+        row.addEventListener('click', () => openProjectModal(p));
+        toc.appendChild(row);
+      });
+    }
+
+    /* ============================================================
+       BUILD — Fullpage scroll lists (Matter / Drawings / Models)
+    ============================================================ */
+    function buildFullpageList(containerId, items) {
+      const list = document.getElementById(containerId);
+      items.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'fullpage-item reveal';
+
+        /* Detect canvas format: images are objects {src,x,y,w} */
+        const isCanvas = Array.isArray(item.images) && item.images.length > 0
+                         && typeof item.images[0] === 'object';
+
+        if (isCanvas) {
+          /* Canvas layout — absolute positioning */
+          const h = item.canvasH || 600;
+          const canvasEl = document.createElement('div');
+          canvasEl.style.cssText = `position:relative;width:100%;height:${h}px;overflow:hidden;`;
+          item.images.forEach(d => {
+            const img = document.createElement('img');
+            img.src = d.src; img.alt = item.title; img.loading = 'lazy';
+            img.style.cssText = `position:absolute;left:${d.x}%;top:${d.y}%;width:${d.w}%;height:auto;`;
+            if (d.crop) {
+              var c = d.crop;
+              img.style.clipPath = `inset(${c.t}% ${c.r}% ${c.b}% ${c.l}%)`;
+            }
+            canvasEl.appendChild(img);
+          });
+          el.appendChild(canvasEl);
+        } else {
+          /* Legacy flex layout — support 'single', 'stacked', or default side-by-side */
+          const layout   = item.layout || (item.images && item.images.length === 1 ? 'single' : '');
+          const imgClass = layout ? 'fullpage-images ' + layout : 'fullpage-images';
+          const imgsHTML = (item.images || []).map(src =>
+            `<div class="fullpage-img-wrap">
+               <img src="${src}" alt="${item.title}" loading="lazy" />
+             </div>`
+          ).join('');
+          const imgDiv = document.createElement('div');
+          imgDiv.className = imgClass; imgDiv.innerHTML = imgsHTML;
+          el.appendChild(imgDiv);
+        }
+
+        /* Description paragraphs */
+        const descHTML = item.description.map(p => `<p>${p}</p>`).join('');
+        const caption  = document.createElement('div');
+        caption.className = 'fullpage-caption';
+        caption.innerHTML = `
+          <div class="fullpage-caption-title">${item.title}</div>
+          <div class="fullpage-caption-desc">${descHTML}</div>`;
+        el.appendChild(caption);
+        list.appendChild(el);
+      });
+    }
+
+    /* ============================================================
+       MODAL — open architecture project
+    ============================================================ */
+    function openProjectModal(project) {
+      document.getElementById('modal-title').textContent = project.title;
+      document.getElementById('modal-sub').textContent  = project.program;
+
+      /* Meta + description — shown at TOP before images */
+      const meta = [
+        { label: 'Location', value: project.location },
+        { label: 'Year',     value: project.year },
+        { label: 'Context',  value: project.context },
+        project.professors    ? { label: 'Professor',     value: project.professors }    : null,
+        project.collaborators ? { label: 'Collaboration', value: project.collaborators } : null,
+      ].filter(Boolean);
+
+      const intro = document.getElementById('modal-intro');
+      intro.classList.remove('faded');
+      intro.innerHTML = `
+        <div class="modal-meta">
+          ${meta.map(m => `
+            <div class="modal-meta-item">
+              <div class="modal-meta-label">${m.label}</div>
+              <div class="modal-meta-value">${m.value}</div>
+            </div>`).join('')}
+        </div>
+        <div class="modal-description">
+          ${project.description.map(p => `<p>${p}</p>`).join('')}
+        </div>
+      `;
+
+      /* Gallery spreads — support both legacy array format and {images,caption} */
+      const gallery = document.getElementById('modal-gallery');
+      gallery.innerHTML = '';
+      project.spreads.forEach(spreadRaw => {
+        const spread  = Array.isArray(spreadRaw) ? { images: spreadRaw, caption: '' } : spreadRaw;
+        const images  = spread.images || [];
+        const row     = document.createElement('div');
+        row.className = 'modal-spread' + (images.length === 1 ? ' single' : '');
+        images.forEach(src => {
+          const wrap = document.createElement('div');
+          wrap.className = 'modal-spread-img';
+          wrap.innerHTML = `<img src="${src}" alt="" loading="lazy" style="${spread._imgStyle||''}" />`;
+          row.appendChild(wrap);
+        });
+        if (spread.caption) {
+          const cap = document.createElement('p');
+          cap.className = 'modal-spread-caption';
+          cap.textContent = spread.caption;
+          row.appendChild(cap);
+        }
+        gallery.appendChild(row);
+      });
+
+      const modal     = document.getElementById('modal');
+      const scrollEl  = document.getElementById('modal-scroll');
+      modal.setAttribute('aria-hidden', 'false');
+      modal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      scrollEl.scrollTop = 0;
+
+      /* Fade intro out as user scrolls into images */
+      const introH = intro.offsetHeight;
+      function onModalScroll() {
+        const pct = scrollEl.scrollTop / (introH || 1);
+        if (pct > 0.35) {
+          intro.classList.add('faded');
+        } else {
+          intro.classList.remove('faded');
+        }
+      }
+      scrollEl.removeEventListener('scroll', scrollEl._introFade);
+      scrollEl._introFade = onModalScroll;
+      scrollEl.addEventListener('scroll', onModalScroll);
+    }
+
+    /* ============================================================
+       MODAL — close
+    ============================================================ */
+    function closeModal() {
+      const modal    = document.getElementById('modal');
+      const scrollEl = document.getElementById('modal-scroll');
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      scrollEl.scrollTop = 0;
+      document.getElementById('modal-intro').classList.remove('faded');
+    }
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    /* ============================================================
+       HERO NAME — SPRAY-PAINT DISPERSION ON SCROLL
+       Letters stay in place; pixels scatter outward from both
+       extremities of the name like aerosol spray.
+       Uses SVG feTurbulence + feDisplacementMap for authentic
+       spray-paint texture, with per-letter opacity fading from
+       the left (E) and right (Z) ends inward.
+    ============================================================ */
+    (function initHeroSpray() {
+      const heroSvg    = document.querySelector('.hero-name-svg');
+      if (!heroSvg) return;
+
+      const dispNode   = document.getElementById('spray-disp');
+      const blurNode   = document.getElementById('spray-blur');
+      const letters    = heroSvg.querySelectorAll('.hero-letter');
+      const N          = letters.length;
+      const heroSection = document.getElementById('hero');
+
+      // Apply filter to the entire SVG name
+      heroSvg.style.filter = 'url(#hero-spray)';
+
+      function applySpray() {
+        const heroH    = heroSection.offsetHeight;
+        // Raw progress: 0 at top of hero, 1 when hero has fully scrolled away
+        const rawP     = Math.max(0, window.scrollY / heroH);
+
+        // ── Global SVG filter uses full raw progress ──
+        const filterP  = Math.min(1, rawP);
+        const disp     = (filterP * filterP) * 90;
+        const blur     = filterP * 18;
+        if (dispNode) dispNode.setAttribute('scale', disp.toFixed(1));
+        if (blurNode) blurNode.setAttribute('stdDeviation', blur.toFixed(2));
+
+        // ── Per-letter opacity: scaled so center letters are still
+        //    fully intact when the name exits the viewport.
+        //    letterP tops out at 0.54 when hero exits (rawP=1), so
+        //    center letters (fadeStart=0.48) have only just begun to
+        //    fade — alpha ≈ 0.9 — while edge letters are fully gone. ──
+        const letterP  = Math.min(1, rawP * 0.54);
+        letters.forEach((letter, i) => {
+          const pos       = i / Math.max(N - 1, 1);   // 0=left … 1=right
+          const edgeness  = Math.abs(pos - 0.5) * 2;  // 1=edge, 0=centre
+          const fadeStart = 0.08 + (1 - edgeness) * 0.40; // 0.08 … 0.48
+          const fadeRange = 1 - fadeStart;
+          const lp        = Math.max(0, Math.min(1, (letterP - fadeStart) / fadeRange));
+          letter.style.opacity = (1 - lp * 0.92).toFixed(3);
+        });
+      }
+
+      // Throttle with requestAnimationFrame
+      let ticking = false;
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          requestAnimationFrame(() => { applySpray(); ticking = false; });
+          ticking = true;
+        }
+      }, { passive: true });
+
+      applySpray(); // set initial state
+    })();
+
+    /* ============================================================
+       CUSTOM CURSOR
+    ============================================================ */
+    const dot  = document.getElementById('cursor-dot');
+    const ring = document.getElementById('cursor-ring');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+    });
+    (function lerpRing() {
+      rx += (mx - rx) * 0.11; ry += (my - ry) * 0.11;
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(lerpRing);
+    })();
+
+    const hoverSel = 'a, button, .arch-toc-item, .fullpage-item';
+    document.addEventListener('mouseover',  e => { if (e.target.closest(hoverSel)) document.body.classList.add('cursor-hover'); });
+    document.addEventListener('mouseout',   e => { if (e.target.closest(hoverSel)) document.body.classList.remove('cursor-hover'); });
+    document.addEventListener('mousedown',  () => document.body.classList.add('cursor-active'));
+    document.addEventListener('mouseup',    () => document.body.classList.remove('cursor-active'));
+
+    /* ============================================================
+       NAV SCROLL + ACTIVE SECTION
+    ============================================================ */
+    const navEl    = document.getElementById('nav');
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-links a[data-section]');
+
+    window.addEventListener('scroll', () => {
+      navEl.classList.toggle('scrolled', window.scrollY > 60);
+      let current = '';
+      sections.forEach(s => { if (s.getBoundingClientRect().top <= 120) current = s.id; });
+      navLinks.forEach(l => l.classList.toggle('active', l.dataset.section === current));
+    }, { passive: true });
+
+    /* ============================================================
+       SCROLL REVEAL
+    ============================================================ */
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }});
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+    function observeAll() {
+      document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    }
+
+    /* ============================================================
+       HAMBURGER MENU (mobile)
+    ============================================================ */
+    (function initHamburger() {
+      const btn     = document.getElementById('nav-hamburger');
+      const overlay = document.getElementById('nav-overlay');
+      if (!btn || !overlay) return;
+
+      function openMenu() {
+        btn.classList.add('open');
+        overlay.classList.add('open');
+        document.body.classList.add('menu-open');
+        btn.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeMenu() {
+        btn.classList.remove('open');
+        overlay.classList.remove('open');
+        document.body.classList.remove('menu-open');
+        btn.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      }
+
+      btn.addEventListener('click', () => {
+        btn.classList.contains('open') ? closeMenu() : openMenu();
+      });
+
+      // Close when a link is tapped
+      overlay.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', closeMenu);
+      });
+
+      // Close on Escape
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && overlay.classList.contains('open')) closeMenu();
+      });
+
+      // Sync overlay active states with scroll
+      const overlayLinks = overlay.querySelectorAll('a[data-section]');
+      window.addEventListener('scroll', () => {
+        let current = '';
+        document.querySelectorAll('section[id]').forEach(s => {
+          if (s.getBoundingClientRect().top <= 120) current = s.id;
+        });
+        overlayLinks.forEach(l => l.classList.toggle('active', l.dataset.section === current));
+      }, { passive: true });
+    })();
+
+    /* ============================================================
+       INIT
+    ============================================================ */
+    /* Apply custom section titles from SITE_DATA (set via admin) */
+    (function applySectionTitles() {
+      const t = SITE_DATA.sectionTitles || {};
+      Object.entries(t).forEach(([id, val]) => {
+        const h2 = document.getElementById('st-' + id);
+        if (h2) h2.innerHTML = val.replace(/\n/g, '<br>');
+        /* Nav — all links with data-section matching this id */
+        document.querySelectorAll('[data-section="' + id + '"]').forEach(a => {
+          a.textContent = val.split('\n').join(' ');
+        });
+      });
+    })();
+
+    buildAbout();
+    buildArchTOC();
+    buildFullpageList('matter-list',    matterItems);
+    buildFullpageList('drawings-list',  drawingsItems);
+    buildFullpageList('models-list',    modelsItems);
+    /* Video Games — show placeholder only if no items */
+    if (videogamesItems.length > 0) {
+      var ph = document.getElementById('videogames-placeholder');
+      if (ph) ph.style.display = 'none';
+      buildFullpageList('videogames-list', videogamesItems);
+    }
+    /* Custom sections */
+    (function buildCustomSections() {
+      var sections = SITE_DATA.customSections || [];
+      var container = document.getElementById('custom-sections-public');
+      if (!container || sections.length === 0) return;
+      sections.forEach(function(sec) {
+        var section = document.createElement('section');
+        section.id = sec.id || ('custom-' + Date.now());
+        section.innerHTML =
+          '<div class="section-wrap fullbleed">' +
+            '<h2 class="section-title reveal" id="st-' + sec.id + '">' +
+              (sec.title || 'Section').replace(/\n/g,'<br>') +
+            '</h2>' +
+            '<div class="fullpage-list" id="list-' + sec.id + '"></div>' +
+          '</div>';
+        container.appendChild(section);
+        if (sec.items && sec.items.length > 0) {
+          buildFullpageList('list-' + sec.id, sec.items);
+        }
+      });
+    })();
+    observeAll();
+  </script>
+
+  <!-- Three.js for soap bubble -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+  /* ============================================================
+     HERO — REALISTIC SOAP BUBBLE  (Three.js r128)
+     Physical thin-film interference model:
+       δ(λ) = 4π·n·d·cosθt / λ   (Snell refraction inside film)
+     Reflection per channel: R = ½(1 − cos δ)
+     Schlick Fresnel, two specular highlights, very low opacity.
+  ============================================================ */
+  (function initBubble() {
+    const canvas = document.getElementById('hero-bubble');
+    if (!canvas || !window.THREE) return;
+
+    const W = canvas.offsetWidth  || window.innerWidth;
+    const H = canvas.offsetHeight || window.innerHeight;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(W, H, false);
+    renderer.setClearColor(0x000000, 0);
+
+    const scene  = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
+    camera.position.z = 5;
+
+    /* ────────────────────────────────────────────────
+       VERTEX SHADER
+       – passes world normal + view direction
+       – adds a tiny organic wobble so the surface
+         looks alive rather than perfectly rigid
+    ──────────────────────────────────────────────── */
+    const vertShader = `
+      uniform float uTime;
+      varying vec3 vNormal;
+      varying vec3 vViewDir;
+      varying vec3 vWorldPos;
+
+      void main() {
+        // Imperceptibly small vertex wobble (organic membrane feel)
+        float w = 0.018
+          * sin(position.x * 3.8 + uTime * 0.8)
+          * cos(position.y * 3.2 + uTime * 0.55)
+          * sin(position.z * 2.9 + uTime * 0.65);
+        vec3 pos = position + normal * w;
+
+        vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
+        vNormal    = normalize(normalMatrix * normal);
+        vViewDir   = -normalize(mvPos.xyz);
+        vWorldPos  = (modelMatrix * vec4(pos, 1.0)).xyz;
+        gl_Position = projectionMatrix * mvPos;
+      }
+    `;
+
+    /* ────────────────────────────────────────────────
+       FRAGMENT SHADER
+       Physical model:
+         1. Film thickness d varies slowly across the
+            surface + drifts with time (gravity + evap)
+         2. For each of R, G, B we compute the actual
+            thin-film phase shift and reflection coeff
+         3. Schlick Fresnel — almost nothing face-on,
+            a subtle rim at grazing angles
+         4. Two sharp white specular highlights
+         5. Everything is kept very transparent
+    ──────────────────────────────────────────────── */
+    const fragShader = `
+      uniform float uTime;
+      varying vec3  vNormal;
+      varying vec3  vViewDir;
+      varying vec3  vWorldPos;
+
+      // Physical thin-film reflection coefficient for one wavelength (nm).
+      // n   = refractive index of soap (~1.33)
+      // d   = film thickness (nm)
+      // cosI = cosine of incidence angle
+      float filmReflect(float lambda, float d, float cosI, float n) {
+        // Snell: cosine of refracted angle
+        float sinI  = sqrt(max(0.0, 1.0 - cosI * cosI));
+        float sinT  = sinI / n;
+        float cosT  = sqrt(max(0.0, 1.0 - sinT * sinT));
+        // Optical path difference → phase shift
+        float delta = (4.0 * 3.14159265 * n * d * cosT) / lambda;
+        // Two-beam interference (thin film): R = ½(1 – cos δ)
+        return 0.5 * (1.0 - cos(delta));
+      }
+
+      void main() {
+        vec3 n = normalize(vNormal);
+        vec3 v = normalize(vViewDir);
+
+        float cosI = abs(dot(n, v));   // abs → both sides of surface
+
+        // ── Schlick Fresnel (air→soap, n≈1.33) ──
+        float R0      = 0.02;          // ((1-1.33)/(1+1.33))^2
+        float fresnel = R0 + (1.0 - R0) * pow(1.0 - cosI, 5.0);
+
+        // ── Film thickness map ──
+        // Spatial variation (different patches) + very slow temporal drift
+        // Values in nm: 180–480 gives vivid first-order colours
+        float d = 320.0
+          + 110.0 * sin(vWorldPos.x * 1.8 + uTime * 0.10)
+                  * cos(vWorldPos.y * 1.5 + uTime * 0.08)
+          +  70.0 * cos(vWorldPos.z * 2.2 + uTime * 0.13)
+          +  40.0 * sin((vWorldPos.x + vWorldPos.y) * 1.2 + uTime * 0.06);
+
+        // ── Per-wavelength reflection (R 650 nm, G 550 nm, B 460 nm) ──
+        float n_soap = 1.33;
+        float r = filmReflect(650.0, d, cosI, n_soap);
+        float g = filmReflect(550.0, d, cosI, n_soap);
+        float b = filmReflect(460.0, d, cosI, n_soap);
+
+        // Film colour is naturally desaturated — mix toward white at centre
+        vec3 filmRGB = vec3(r, g, b);
+        // Tone-map: keep the shimmer visible but never garish
+        filmRGB = mix(vec3(0.88, 0.91, 0.95), filmRGB, fresnel * 0.72 + 0.10);
+
+        // ── Two specular highlights (simulated light sources) ──
+        vec3 L1   = normalize(vec3( 0.55,  0.80, 1.00));
+        vec3 L2   = normalize(vec3(-0.70,  0.35, 0.85));
+        float sp1 = pow(max(0.0, dot(reflect(-L1, n), v)), 180.0);
+        float sp2 = pow(max(0.0, dot(reflect(-L2, n), v)),  90.0) * 0.35;
+        float spec = sp1 + sp2;
+
+        // Merge specular (always white) into colour
+        vec3 col = mix(filmRGB, vec3(1.0), min(spec * 1.5, 1.0));
+
+        // ── Alpha — VERY transparent ──
+        // Base ≈ 0   (totally invisible at dead-centre)
+        // Fresnel rim ≈ 0.17 max at 90°
+        // Specular highlights punch through to 0.8
+        float alpha = fresnel * 0.17 + 0.005 + spec * 0.80;
+
+        gl_FragColor = vec4(col, clamp(alpha, 0.0, 0.85));
+      }
+    `;
+
+    /* ── Mesh ── */
+    const geo = new THREE.SphereGeometry(1.85, 96, 96);
+    const mat = new THREE.ShaderMaterial({
+      vertexShader:   vertShader,
+      fragmentShader: fragShader,
+      uniforms:       { uTime: { value: 0 } },
+      transparent:    true,
+      depthWrite:     false,
+      side:           THREE.DoubleSide,
+    });
+    const bubble = new THREE.Mesh(geo, mat);
+    scene.add(bubble);
+
+    /* ── Animation loop ── */
+    const clock = new THREE.Clock();
+    let running = true;
+
+    function animate() {
+      if (!running) return;
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+      mat.uniforms.uTime.value = t;
+
+      // Fluid, non-repetitive float (superposition of two periods)
+      bubble.position.y = Math.sin(t * 0.27) * 0.20 + Math.sin(t * 0.11) * 0.07;
+      bubble.position.x = Math.sin(t * 0.18 + 1.4) * 0.11;
+
+      // Very slow rotation — shifts colour patches gradually
+      bubble.rotation.y = t * 0.035;
+      bubble.rotation.z = Math.sin(t * 0.065) * 0.05;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    /* ── Pause when off-screen ── */
+    const heroEl = document.getElementById('hero');
+    if (heroEl && 'IntersectionObserver' in window) {
+      new IntersectionObserver(e => {
+        running = e[0].isIntersecting;
+        if (running) animate();
+      }, { threshold: 0 }).observe(heroEl);
+    }
+
+    /* ── Resize ── */
+    window.addEventListener('resize', () => {
+      const w = canvas.offsetWidth, h = canvas.offsetHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    });
+  })();
+  </script>
+</body>
+</html>
