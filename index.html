@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Emile Henchoz — Architecture</title>
   <meta name="description" content="Portfolio of Emile Henchoz, Bachelor of Arts – HES-SO Architecture." />
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" href="LOGO EH.png" type="image/png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <!-- Cormorant Garamond: elegant serif for body/descriptions -->
@@ -89,8 +92,13 @@
       backdrop-filter: none;
     }
     .nav-logo {
-      font-family: var(--font-sans); font-weight: 400;
-      font-size: .72rem; letter-spacing: .18em; text-transform: uppercase;
+      display: flex; align-items: center;
+      line-height: 0;
+    }
+    .nav-logo img {
+      height: 36px; width: auto;
+      display: block;
+      /* Logo is black on transparent — invert on dark/mixed backgrounds if needed */
     }
     .nav-links { display: flex; gap: 32px; list-style: none; }
     .nav-links a {
@@ -397,6 +405,22 @@
     .about-cv-download:hover { color: var(--burgundy); }
     .about-cv-download svg { flex-shrink: 0; }
 
+    /* About — portrait photo column */
+    #about-photo-col {
+      display: flex; flex-direction: column; align-items: flex-start;
+      padding-top: 8px;
+    }
+    #about-photo-col img {
+      width: 100%; max-width: 420px;
+      height: auto; display: block;
+    }
+    .about-photo-credit {
+      margin-top: 10px;
+      font-size: .58rem; letter-spacing: .2em; text-transform: uppercase;
+      color: var(--grey-mid);
+      font-family: var(--font-sans);
+    }
+
     /* ==============================
        PROJECT MODAL
     ============================== */
@@ -629,9 +653,12 @@
 
       /* About */
       #about-wrap {
-        grid-template-columns: 1fr; gap: 32px;
+        grid-template-columns: 1fr; gap: 40px;
         padding: 72px 20px;
       }
+      /* Photo goes below text on mobile — reorder columns */
+      #about-photo-col { order: 2; }
+      #about-photo-col img { max-width: 100%; }
 
       /* Modal — full screen, scrollable */
       .modal-header { padding: 18px 20px 14px; }
@@ -684,7 +711,9 @@
 
   <!-- ====== NAV ====== -->
   <nav id="nav">
-    <a href="#hero" class="nav-logo">Emile Henchoz</a>
+    <a href="#hero" class="nav-logo" aria-label="Emile Henchoz — Accueil">
+      <img src="LOGO EH.png" alt="Emile Henchoz" />
+    </a>
     <ul class="nav-links">
       <li><a href="#architecture" data-section="architecture">Architecture</a></li>
       <li><a href="#matter"       data-section="matter">Matter</a></li>
@@ -847,7 +876,7 @@
         <div id="about-bio" class="about-bio reveal"></div>
         <div id="about-contact" class="about-contact reveal"></div>
       </div>
-      <div></div>
+      <div id="about-photo-col" class="reveal"></div>
     </div>
   </section>
 
@@ -902,7 +931,9 @@
           "What drives me in architecture is its power to durably transform the environment and daily lives of many people. I enjoy exploring, reflecting, and designing spaces that are both functional and adapted to their users. I am fascinated by the beauty of a structure — however simple — when it perfectly meets the demands of a project, with the right materials in the right places. A well-considered detail that elegantly resolves a complex problem inspires me just as much."
         ],
         "email": "contact@emilehenchoz-architecture.ch",
-        "instagram": "emilehenchoz.architecture"
+        "instagram": "emilehenchoz.architecture",
+        "photo": "images/about-portrait.webp",
+        "photoCredit": "Chris Durussel"
       },
       "architectureProjects": [
         {
@@ -1502,6 +1533,16 @@
           '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><rect x=".5" y=".5" width="12" height="12" rx="3" stroke="currentColor"/><circle cx="6.5" cy="6.5" r="2.5" stroke="currentColor"/><circle cx="10" cy="3" r=".9" fill="currentColor"/></svg>' +
           '@' + a.instagram +
         '</a>' + cvHtml;
+      // Portrait photo
+      var photoCol = document.getElementById('about-photo-col');
+      if (photoCol && a.photo) {
+        var creditHtml = a.photoCredit
+          ? '<p class="about-photo-credit">photo : ' + a.photoCredit + '</p>'
+          : '';
+        photoCol.innerHTML =
+          '<img src="' + a.photo + '" alt="Portrait — Emile Henchoz" loading="lazy" />' +
+          creditHtml;
+      }
     }
 
     /* ============================================================
