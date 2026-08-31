@@ -366,6 +366,148 @@
     }
 
     /* ==============================
+       VIDEO GAMES - KEEP IN TOUCH
+    ============================== */
+    .kit-block {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 64px;
+      align-items: center;
+      padding: 0 52px;
+    }
+    .kit-stage { display: flex; justify-content: center; }
+    .kit-frame {
+      position: relative;
+      height: min(76vh, 760px);
+      aspect-ratio: 9 / 16;
+      max-width: 100%;
+      background: var(--black);
+      border: 1px solid var(--grey-light);
+      overflow: hidden;
+    }
+    .kit-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+    .kit-frame, .kit-frame * { cursor: auto !important; }
+    body.kit-native-cursor #cursor-dot,
+    body.kit-native-cursor #cursor-ring { opacity: 0 !important; }
+    .kit-poster {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      padding: 0; border: 0; background: var(--black);
+      display: block; overflow: hidden;
+    }
+    .kit-poster img {
+      width: 100%; height: 100%; object-fit: cover;
+      opacity: .55; transition: opacity var(--transition), transform var(--transition);
+    }
+    .kit-poster:hover img { opacity: .78; transform: scale(1.03); }
+    .kit-poster-overlay {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px;
+      text-align: center; padding: 24px;
+      background: radial-gradient(ellipse at center,
+                  rgba(13,13,13,.72) 0%, rgba(13,13,13,.45) 55%, rgba(13,13,13,.25) 100%);
+      transition: background var(--transition);
+    }
+    .kit-poster:hover .kit-poster-overlay {
+      background: radial-gradient(ellipse at center,
+                  rgba(13,13,13,.60) 0%, rgba(13,13,13,.34) 55%, rgba(13,13,13,.18) 100%);
+    }
+    .kit-play-note { color: var(--grey-light); }
+    .kit-play-icon {
+      width: 66px; height: 66px; border-radius: 50%;
+      border: 1px solid var(--white);
+      display: flex; align-items: center; justify-content: center;
+      transition: background var(--trans-fast), transform var(--trans-fast);
+    }
+    .kit-play-icon svg { width: 20px; height: 20px; margin-left: 3px; fill: var(--white); }
+    .kit-poster:hover .kit-play-icon { background: var(--burgundy); transform: scale(1.07); }
+    .kit-play-label {
+      font-family: var(--font-sans); color: var(--white);
+      font-size: .68rem; letter-spacing: .26em; text-transform: uppercase;
+    }
+    .kit-play-note {
+      font-family: var(--font-sans); color: var(--grey-mid);
+      font-size: .62rem; letter-spacing: .1em;
+    }
+    .kit-fallback {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 18px;
+      padding: 32px; text-align: center; background: var(--black);
+    }
+    .kit-fallback p {
+      font-family: var(--font-serif); font-style: italic;
+      font-size: 1.02rem; color: var(--grey-light); line-height: 1.7;
+    }
+    .kit-title {
+      font-family: var(--font-serif);
+      font-size: clamp(1.6rem, 2.6vw, 2.2rem);
+      font-weight: 300; line-height: 1.15;
+    }
+    .kit-meta {
+      font-family: var(--font-sans); font-size: .6rem;
+      letter-spacing: .3em; text-transform: uppercase;
+      color: var(--burgundy); margin-top: 14px;
+    }
+    .kit-desc {
+      font-family: var(--font-serif); font-size: .95rem; font-weight: 300;
+      color: var(--grey-dark); line-height: 1.85; margin-top: 26px;
+      max-width: 46ch;
+    }
+    .kit-desc p + p { margin-top: .9em; }
+    .kit-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .kit-btn {
+      font-family: var(--font-sans); font-size: .63rem;
+      letter-spacing: .26em; text-transform: uppercase;
+      padding: 15px 26px; border: 1px solid var(--black);
+      background: none; color: var(--black); cursor: none;
+      transition: background var(--trans-fast), color var(--trans-fast), border-color var(--trans-fast);
+      display: inline-flex; align-items: center; gap: 10px;
+    }
+    .kit-btn svg { width: 13px; height: 13px; }
+    .kit-btn:hover { background: var(--black); color: var(--white); }
+    .kit-btn.kit-btn-ghost { border-color: var(--grey-mid); color: var(--grey-dark); }
+    .kit-btn.kit-btn-ghost:hover { background: var(--burgundy); border-color: var(--burgundy); color: var(--white); }
+    .kit-fallback .kit-btn { border-color: var(--white); color: var(--white); }
+    .kit-fallback .kit-btn:hover { background: var(--white); color: var(--black); }
+    .kit-overlay {
+      position: fixed; inset: 0; z-index: 9500;
+      background: rgba(13, 13, 13, .94);
+      display: flex; align-items: center; justify-content: center;
+      padding: 40px 20px;
+      opacity: 0; transition: opacity var(--trans-fast);
+    }
+    .kit-overlay[hidden] { display: none !important; }
+    .kit-overlay.is-open { opacity: 1; }
+    .kit-overlay video {
+      max-width: min(94vw, 430px); max-height: 88vh;
+      width: auto; height: auto; display: block;
+      background: #000; cursor: auto;
+    }
+    .kit-overlay-close {
+      position: absolute; top: 26px; right: 30px;
+      width: 46px; height: 46px; border-radius: 50%;
+      background: none; border: 1px solid var(--grey-mid);
+      color: var(--white); font-size: 1.5rem; line-height: 1;
+      cursor: auto; transition: background var(--trans-fast), border-color var(--trans-fast);
+    }
+    .kit-overlay-close:hover { background: var(--burgundy); border-color: var(--burgundy); }
+
+    @media (max-width: 1024px) {
+      .kit-block { grid-template-columns: 1fr; gap: 40px; padding: 0 20px; }
+      .kit-frame { height: min(70vh, 620px); }
+      .kit-desc { max-width: none; }
+    }
+    @media (max-width: 600px) {
+      .kit-block { padding: 0 16px; }
+      .kit-frame { height: 74vh; }
+      .kit-actions { gap: 10px; }
+      .kit-btn { padding: 13px 18px; font-size: .58rem; letter-spacing: .2em; }
+      .kit-overlay-close { top: 14px; right: 16px; }
+    }
+
+    /* ==============================
        ABOUT
     ============================== */
     #about-wrap {
@@ -858,9 +1000,62 @@
       <p class="section-label reveal">05</p>
       <h2 class="section-title reveal" id="st-videogames">Video Games</h2>
       <div class="fullpage-list" id="videogames-list"></div>
-      <div class="coming-soon reveal" id="videogames-placeholder">
-        <p class="coming-soon-text">Projects in progress</p>
-        <p class="coming-soon-sub">Coming soon</p>
+
+      <!-- ---- Keep in Touch : jouable dans la page ---- -->
+      <div class="kit-block reveal">
+        <div class="kit-stage">
+          <div class="kit-frame" id="kit-frame">
+            <button type="button" class="kit-poster" id="kit-play"
+                    aria-label="Load and play Keep in Touch in the browser">
+              <img src="videos/keep-in-touch-teaser-poster.jpg"
+                   alt="Keep in Touch title screen" loading="lazy" />
+              <span class="kit-poster-overlay">
+                <span class="kit-play-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                </span>
+                <span class="kit-play-label">Play in browser</span>
+                <span class="kit-play-note">Loads in a few seconds</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div class="kit-info">
+          <h3 class="kit-title">Keep in Touch</h3>
+          <p class="kit-meta">Puzzle game &middot; Godot</p>
+          <div class="kit-desc">
+            <p>Provide Wi-Fi coverage to a refugee camp in this wordless puzzle game. By strategically placing modems on electricity poles, link every shelter so displaced people can contact loved ones and access information.</p>
+            <p>Simple to grasp but challenging to master, this contemplative journey turns a meaningful mission into a satisfying experience.</p>
+          </div>
+          <div class="kit-actions">
+            <button type="button" class="kit-btn kit-btn-ghost" id="kit-teaser">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              Watch the teaser
+            </button>
+            <a class="kit-btn kit-btn-ghost" href="https://emilehenchoz.itch.io/keep-in-touch"
+               target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              Play on itch.io
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- Surimpression : teaser video ---- -->
+      <div class="kit-overlay" id="kit-overlay" hidden>
+        <button type="button" class="kit-overlay-close" id="kit-overlay-close"
+                aria-label="Close the video">&times;</button>
+        <video id="kit-video" controls playsinline preload="none"
+               poster="videos/keep-in-touch-teaser-poster.jpg">
+          <source src="videos/keep-in-touch-teaser.mp4" type="video/mp4" />
+        </video>
       </div>
     </div>
   </section>
@@ -1907,6 +2102,74 @@
       if (ph) ph.style.display = 'none';
       buildFullpageList('videogames-list', videogamesItems);
     }
+
+    /* ==============================
+       KEEP IN TOUCH - jeu + teaser
+    ============================== */
+    (function keepInTouch() {
+      var EMBED_URL  = 'https://itch.io/embed-upload/17877751?color=0d0d0d';
+      var ITCH_PAGE  = 'https://emilehenchoz.itch.io/keep-in-touch';
+      var LOAD_LIMIT = 25000;
+
+      var frame   = document.getElementById('kit-frame');
+      var playBtn = document.getElementById('kit-play');
+      if (!frame || !playBtn) return;
+
+      function nativeCursor(on) {
+        document.body.classList.toggle('kit-native-cursor', on);
+      }
+      frame.addEventListener('mouseenter', function () { nativeCursor(true); });
+      frame.addEventListener('mouseleave', function () { nativeCursor(false); });
+
+      function showFallback() {
+        frame.innerHTML =
+          '<div class="kit-fallback">' +
+            '<p>The game could not load here.<br />It is still playable on itch.io.</p>' +
+            '<a class="kit-btn" href="' + ITCH_PAGE + '" target="_blank" rel="noopener">Play on itch.io</a>' +
+          '</div>';
+      }
+
+      playBtn.addEventListener('click', function () {
+        var loaded = false;
+        var iframe = document.createElement('iframe');
+        iframe.src = EMBED_URL;
+        iframe.title = 'Keep in Touch';
+        iframe.allow = 'autoplay; fullscreen; gamepad; keyboard-map';
+        iframe.setAttribute('allowfullscreen', 'true');
+        iframe.addEventListener('load', function () { loaded = true; });
+        iframe.addEventListener('error', showFallback);
+        frame.innerHTML = '';
+        frame.appendChild(iframe);
+        setTimeout(function () { if (!loaded) showFallback(); }, LOAD_LIMIT);
+      });
+
+      var overlay  = document.getElementById('kit-overlay');
+      var video    = document.getElementById('kit-video');
+      var openBtn  = document.getElementById('kit-teaser');
+      var closeBtn = document.getElementById('kit-overlay-close');
+      if (!overlay || !video || !openBtn) return;
+
+      function openTeaser() {
+        overlay.hidden = false;
+        nativeCursor(true);
+        requestAnimationFrame(function () { overlay.classList.add('is-open'); });
+        var p = video.play();
+        if (p && p.catch) p.catch(function () {});
+      }
+      function closeTeaser() {
+        video.pause();
+        overlay.classList.remove('is-open');
+        nativeCursor(false);
+        setTimeout(function () { overlay.hidden = true; }, 250);
+      }
+
+      openBtn.addEventListener('click', openTeaser);
+      if (closeBtn) closeBtn.addEventListener('click', closeTeaser);
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) closeTeaser(); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !overlay.hidden) closeTeaser();
+      });
+    })();
     /* Custom sections */
     (function buildCustomSections() {
       var sections = SITE_DATA.customSections || [];
